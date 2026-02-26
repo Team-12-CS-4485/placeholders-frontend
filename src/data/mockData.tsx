@@ -1,4 +1,4 @@
-import type { Trend, CreatorRisk, WeekData } from '../types';
+import type { Trend, CreatorRisk, WeekData, TrendAlert } from '../types';
 import { Highlight } from '../components/shared/Highlight';
 
 export const mockTickerItems: string[] = [
@@ -33,7 +33,11 @@ export const mockTrends: Trend[] = [
       '90 Days': [
         { label: 'Oct', value: 50 }, { label: 'Nov', value: 60 }, { label: 'Dec', value: 100 }
       ]
-    }
+    },
+    creatorRisks: [
+      { channelId: '@RoboTechInsider', score: 0.85, riskLevel: 'HIGH' },
+      { channelId: '@BlueCollarVoice', score: 0.62, riskLevel: 'MED' }
+    ]
   },
   {
     id: 't2',
@@ -59,7 +63,11 @@ export const mockTrends: Trend[] = [
       '90 Days': [
         { label: 'Oct', value: 30 }, { label: 'Nov', value: 40 }, { label: 'Dec', value: 45 }
       ]
-    }
+    },
+    creatorRisks: [
+      { channelId: '@GreenInvest', score: 0.21, riskLevel: 'LOW' },
+      { channelId: '@EcoTechDaily', score: 0.15, riskLevel: 'LOW' }
+    ]
   },
   {
     id: 't3',
@@ -85,7 +93,33 @@ export const mockTrends: Trend[] = [
       '90 Days': [
         { label: 'Oct', value: 5 }, { label: 'Nov', value: 8 }, { label: 'Dec', value: 15 }
       ]
-    }
+    },
+    creatorRisks: [
+      { channelId: '@MedTruthDaily', score: 0.95, riskLevel: 'HIGH' },
+      { channelId: '@FitLifeHacks', score: 0.88, riskLevel: 'HIGH' },
+      { channelId: '@DrWellness', score: 0.75, riskLevel: 'MED' }
+    ]
+  }
+];
+
+export const mockTrendAlerts: TrendAlert[] = [
+  {
+    id: 'a1',
+    type: 'WARNING',
+    headline: 'Spike in Medical Misinfo',
+    description: <>Unverified GLP-1 alternatives seeing a <Highlight color="pink">300% engagement spike</Highlight> in 48 hours.</>
+  },
+  {
+    id: 'a2',
+    type: 'SHIFT',
+    headline: 'Sentiment Reversal: Tech Jobs',
+    description: <>Discourse around AI coding assistants shifted from 60% positive to <Highlight color="yellow">78% negative</Highlight> this week.</>
+  },
+  {
+    id: 'a3',
+    type: 'NEW',
+    headline: 'Emerging: Predictive Wearables',
+    description: <>New cluster forming around smart rings predicting viral infections. Monitoring for health claims.</>
   }
 ];
 
@@ -206,11 +240,4 @@ export const mockWeeks: WeekData[] = [
       }
     ]
   }
-];
-
-export const mockCreatorRisks: CreatorRisk[] = [
-  { channelId: '@CryptoKingX', score: 0.92, riskLevel: 'HIGH' },
-  { channelId: '@MedTruthDaily', score: 0.88, riskLevel: 'HIGH' },
-  { channelId: '@TechReviewer', score: 0.31, riskLevel: 'LOW' },
-  { channelId: '@FinSense', score: 0.45, riskLevel: 'MED' }
 ];

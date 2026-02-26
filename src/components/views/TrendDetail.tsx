@@ -69,7 +69,7 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
 
         <div className="col-span-4 vertical-divider article-block">
           <h3>Contributing Narratives</h3>
-          <ul className="classified-list" style={{ marginTop: '15px' }}>
+          <ul className="classified-list" style={{ marginTop: '15px', marginBottom: '30px' }}>
             {relatedNarratives.map(n => (
               <li key={n.id} className="classified-item" style={{ cursor: 'pointer' }} onClick={() => onNarrativeClick(n.id, n.weekId)}>
                 <span className="classified-meta">{n.weekName}</span>
@@ -82,6 +82,33 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
               </li>
             )}
           </ul>
+
+          <h3 className="hl-pink" style={{ display: 'inline-block' }}>Creator Risk Monitor</h3>
+          <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>Automated toxicity and misinformation tracking for this specific trend.</p>
+          
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px', fontFamily: "'Courier Prime', monospace", fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--ink-heavy)', textAlign: 'left' }}>
+                <th style={{ padding: '10px 0' }}>CHANNEL ID</th>
+                <th style={{ padding: '10px 0' }}>RISK SCORE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trend.creatorRisks.map((risk, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
+                  <td style={{ padding: '10px 0' }}>{risk.channelId}</td>
+                  <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
+                    {risk.score.toFixed(2)} [{risk.riskLevel}]
+                  </td>
+                </tr>
+              ))}
+              {trend.creatorRisks.length === 0 && (
+                <tr>
+                  <td colSpan={2} style={{ padding: '10px 0', fontStyle: 'italic', color: 'var(--ink-faded)' }}>No high-risk creators detected.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
