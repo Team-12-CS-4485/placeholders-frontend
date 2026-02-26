@@ -1,0 +1,1 @@
+export type TabId = 'front-page' | 'classifieds' | 'business';
