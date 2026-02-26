@@ -6,11 +6,13 @@ import { NarrativeDetail } from './components/views/NarrativeDetail';
 import { Trends } from './components/views/Trends';
 import { TrendDetail } from './components/views/TrendDetail';
 import { Archives } from './components/views/Archives';
+import { Claims } from './components/views/Claims';
 import { mockWeeks, mockTrends } from './data/mockData';
 
 function App() {
   const [openTabs, setOpenTabs] = useState<{ id: string; label: string; closable: boolean }[]>([
     { id: 'front-page', label: 'Front Page', closable: false },
+    { id: 'claims', label: 'The Classifieds', closable: false },
     { id: 'trends', label: 'Trends Analytics', closable: false },
     { id: 'archives', label: 'Archives', closable: false },
   ]);
@@ -75,6 +77,10 @@ function App() {
         if (trend) return <TrendDetail trend={trend} onBack={() => setActiveTrendId(null)} onNarrativeClick={handleNarrativeClick} />;
       }
       return <Trends onSelectTrend={handleTrendClick} />;
+    }
+
+    if (activeTab === 'claims') {
+      return <Claims />;
     }
 
     if (activeTab === 'archives') {

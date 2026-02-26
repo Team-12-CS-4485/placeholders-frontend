@@ -107,6 +107,7 @@ export const mockWeeks: WeekData[] = [
       {
         id: 'n1',
         weekId: '2026-w2',
+        category: 'TECH & AI',
         headline: 'AI Coding Assistants Threaten Junior Developer Roles',
         subheadline: <>Data suggests a <Highlight color="yellow">40% contraction</Highlight> in entry-level demand as LLMs automate routine tasks.</>,
         summary: <>A sweeping analysis of <Highlight color="yellow">1,500 YouTube videos</Highlight> reveals a consensus: AI is automating junior-level coding, shifting demand exclusively to senior architects.</>,
@@ -141,6 +142,7 @@ export const mockWeeks: WeekData[] = [
       {
         id: 'n2',
         weekId: '2026-w2',
+        category: 'HEALTH & WELLNESS',
         headline: 'Wearable Tech Pivots to Predictive Diagnostics',
         subheadline: <>Smart rings and watches are now claiming to <Highlight color="teal">predict illness</Highlight> before symptoms appear.</>,
         summary: <>Health influencers are heavily promoting wearables that allegedly predict fevers and viral infections <Highlight color="teal">24 hours in advance</Highlight>.</>,
@@ -182,6 +184,7 @@ export const mockWeeks: WeekData[] = [
       {
         id: 'n3',
         weekId: '2026-w1',
+        category: 'FINANCE & MARKETS',
         headline: 'Commercial Real Estate Defaults Looming',
         subheadline: <>Financial creators warn of a <Highlight color="pink">2008-style banking crisis</Highlight> triggered by empty office buildings.</>,
         summary: <>A growing chorus of finance channels are predicting a severe market correction driven by <Highlight color="pink">commercial real estate defaults</Highlight>.</>,
