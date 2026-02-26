@@ -1,5 +1,4 @@
 import React from 'react';
-import { Ticker } from '../shared/Ticker';
 import { mockTrends } from '../../data/mockData';
 import type { WeekData } from '../../types';
 
@@ -14,8 +13,6 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
 
   return (
     <section className="view-section">
-      <Ticker />
-
       <div className="masthead" style={{ borderBottom: '1px solid var(--ink-heavy)', marginBottom: '20px', paddingBottom: '5px' }}>
         <h2>{week.weekName}</h2>
         <p className="font-mono" style={{ fontSize: '0.9rem' }}>{week.dateRange}</p>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Ticker } from '../shared/Ticker';
 
 export const Masthead: React.FC = () => {
   const dateOptions: Intl.DateTimeFormatOptions = { 
@@ -20,6 +21,7 @@ export const Masthead: React.FC = () => {
         <span>Automated Weekly Digest</span>
         <span>{currentDate}</span>
       </div>
+      <Ticker />
     </header>
   );
 };

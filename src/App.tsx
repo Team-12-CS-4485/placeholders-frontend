@@ -118,6 +118,7 @@ function App() {
   return (
     <div className="app-container">
       <Masthead />
+      
       <FolderTabs 
         tabs={tabs} 
         activeTabId={activeTabId} 
