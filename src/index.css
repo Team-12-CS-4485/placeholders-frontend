@@ -77,12 +77,14 @@ h1, h2, h3, h4, h5 {
 }
 
 /* --- NAVIGATION (MANILA FOLDERS) --- */
+/* --- NAVIGATION (MANILA FOLDERS) --- */
 .folder-tabs {
   display: flex;
   gap: 5px;
   margin-bottom: -1px;
   position: relative;
   z-index: 10;
+  flex-wrap: wrap; /* Allows tabs to wrap if there are too many */
 }
 
 .tab {
@@ -90,7 +92,7 @@ h1, h2, h3, h4, h5 {
   border: 1px solid var(--ink-heavy);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
-  padding: 12px 24px;
+  padding: 12px 20px;
   font-family: 'Courier Prime', monospace;
   font-weight: bold;
   font-size: 0.9rem;
@@ -99,6 +101,34 @@ h1, h2, h3, h4, h5 {
   color: var(--ink-heavy);
   box-shadow: inset 0 2px 5px rgba(255,255,255,0.2);
   transition: background-color 0.2s;
+  
+  /* Flexbox for label and close button */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 280px; /* Prevents dynamic titles from getting too wide */
+}
+
+.tab-label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 0.5;
+  color: var(--ink-heavy);
+  opacity: 0.6;
+  padding: 0 2px;
+}
+
+.tab-close-btn:hover {
+  opacity: 1;
+  color: #d90000;
 }
 
 .tab:hover:not(.active) {
