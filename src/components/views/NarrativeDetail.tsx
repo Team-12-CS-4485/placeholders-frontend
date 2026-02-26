@@ -15,7 +15,7 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, onB
 
   return (
     <section className="view-section">
-      <button className="btn-back" onClick={onBack}>&larr; Back to Week Report</button>
+      <button className="btn-back" onClick={onBack}>&larr; Back to Report</button>
       
       <div className="masthead" style={{ borderBottom: '2px solid var(--ink-heavy)', marginBottom: '30px', paddingBottom: '15px', textAlign: 'left' }}>
         <h1 style={{ fontSize: '3rem', textTransform: 'none', letterSpacing: 'normal' }}>{narrative.headline}</h1>

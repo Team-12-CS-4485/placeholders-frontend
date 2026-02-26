@@ -23,7 +23,6 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
       </div>
 
       <div className="newspaper-grid">
-        {/* Trends List */}
         <div className="col-span-8 article-block">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px' }}>
             <h3>Active Trends</h3>
@@ -44,17 +43,25 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
                 <div className="trend-info">
                   <h4 style={{ fontSize: '1.3rem', marginBottom: '5px' }}>{trend.name}</h4>
                   <p style={{ fontSize: '0.9rem', marginBottom: '5px' }}>{trend.description}</p>
-                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)' }}>Sentiment: {trend.sentiment}</span>
+                  <div className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)', display: 'flex', gap: '15px' }}>
+                    <span>Overall: {trend.overallSentiment}</span>
+                    <span>Recent (7d): {trend.recentSentiment}</span>
+                  </div>
                 </div>
-                <div className="trend-graph-container">
-                  <MiniGraph data={trend.engagementData} />
+                <div className="trend-graph-container" style={{ width: '200px', height: '60px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ flex: 1 }}>
+                    <MiniGraph data={trend.engagementData.map(d => d.value)} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontFamily: 'monospace', marginTop: '2px' }}>
+                    <span>{trend.engagementData[0].date}</span>
+                    <span>{trend.engagementData[trend.engagementData.length - 1].date}</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Creator Risk Monitor (Preserved from original) */}
         <div className="col-span-4 vertical-divider article-block">
           <h3 className="hl-pink" style={{ display: 'inline-block' }}>Creator Risk Monitor</h3>
           <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>Automated toxicity and misinformation tracking across monitored channels.</p>

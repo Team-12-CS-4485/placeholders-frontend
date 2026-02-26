@@ -1,7 +1,5 @@
 import React from 'react';
 
-export type TabId = 'week-report' | 'classifieds' | 'trends';
-
 export interface Claim {
   id: string;
   creatorName: string;
@@ -14,22 +12,29 @@ export interface Claim {
 
 export interface Narrative {
   id: string;
+  weekId: string;
   headline: string;
   subheadline: React.ReactNode;
   summary: React.ReactNode;
   fullText: React.ReactNode[];
   pageNumber: number;
   claims: Claim[];
+  trendIds: string[];
 }
 
 export interface Trend {
   id: string;
   name: string;
   description: React.ReactNode;
-  sentiment: string;
-  engagementData: number[];
+  overallSentiment: string;
+  recentSentiment: string;
+  engagementData: { date: string; value: number }[];
   totalEngagement: number;
   detailedAnalysis: React.ReactNode[];
+  barChartData: {
+    '30 Days': { label: string; value: number }[];
+    '90 Days': { label: string; value: number }[];
+  };
 }
 
 export interface WeeklySummary {
@@ -38,26 +43,16 @@ export interface WeeklySummary {
   content: React.ReactNode;
 }
 
+export interface WeekData {
+  id: string;
+  weekName: string;
+  dateRange: string;
+  summary: WeeklySummary;
+  narratives: Narrative[];
+}
+
 export interface CreatorRisk {
   channelId: string;
   score: number;
   riskLevel: 'HIGH' | 'MED' | 'LOW';
-}
-
-export interface ClassifiedClaim {
-  text: React.ReactNode;
-  source?: string;
-  views?: string;
-  warning?: string;
-}
-
-export interface ClassifiedItem {
-  clusterId: string;
-  title: React.ReactNode;
-  claims: ClassifiedClaim[];
-}
-
-export interface ClassifiedCategory {
-  title: string;
-  items: ClassifiedItem[];
 }

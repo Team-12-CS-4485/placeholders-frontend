@@ -1,28 +1,39 @@
 import React from 'react';
-import type { TabId } from '../../types';
 
-interface FolderTabsProps {
-  activeTab: TabId;
-  onTabChange: (tab: TabId) => void;
+interface Tab {
+  id: string;
+  label: string;
+  closable: boolean;
 }
 
-export const FolderTabs: React.FC<FolderTabsProps> = ({ activeTab, onTabChange }) => {
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'week-report', label: '1. Weekly Report' },
-    { id: 'classifieds', label: '2. Raw Claims' },
-    { id: 'trends', label: '3. Trends Analytics' },
-  ];
+interface FolderTabsProps {
+  tabs: Tab[];
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+  onCloseTab: (tabId: string) => void;
+}
 
+export const FolderTabs: React.FC<FolderTabsProps> = ({ tabs, activeTab, onTabChange, onCloseTab }) => {
   return (
     <nav className="folder-tabs" aria-label="Main Navigation">
       {tabs.map((tab) => (
-        <button
+        <div
           key={tab.id}
           className={`tab ${activeTab === tab.id ? 'active' : ''}`}
           onClick={() => onTabChange(tab.id)}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
         >
-          {tab.label}
-        </button>
+          <span>{tab.label}</span>
+          {tab.closable && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onCloseTab(tab.id); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, color: 'inherit', padding: '0 2px' }}
+              aria-label="Close tab"
+            >
+              &times;
+            </button>
+          )}
+        </div>
       ))}
     </nav>
   );

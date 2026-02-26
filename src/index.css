@@ -343,3 +343,20 @@ h1, h2, h3, h4, h5 {
   width: 150px;
   height: 50px;
 }
+
+/* --- TREND CHIPS --- */
+.trend-chip {
+  display: inline-block;
+  background-color: var(--ink-heavy);
+  color: var(--bg-paper);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.trend-chip:hover {
+  background-color: var(--ink-faded);
+}

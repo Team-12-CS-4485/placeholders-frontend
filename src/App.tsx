@@ -1,61 +1,112 @@
 import { useState } from 'react';
-import type { TabId } from './types';
 import { Masthead } from './components/layout/Masthead';
 import { FolderTabs } from './components/layout/FolderTabs';
 import { WeekReport } from './components/views/WeekReport';
 import { NarrativeDetail } from './components/views/NarrativeDetail';
-import { Classifieds } from './components/views/Classifieds';
 import { Trends } from './components/views/Trends';
 import { TrendDetail } from './components/views/TrendDetail';
-import { mockNarratives, mockTrends } from './data/mockData';
-import { Business } from './components/views/Business';
+import { Archives } from './components/views/Archives';
+import { mockWeeks, mockTrends } from './data/mockData';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('week-report');
+  const [openTabs, setOpenTabs] = useState<{ id: string; label: string; closable: boolean }[]>([
+    { id: 'front-page', label: 'Front Page', closable: false },
+    { id: 'trends', label: 'Trends Analytics', closable: false },
+    { id: 'archives', label: 'Archives', closable: false },
+  ]);
+  const [activeTab, setActiveTab] = useState<string>('front-page');
   
-  // State for drill-down views
   const [activeNarrativeId, setActiveNarrativeId] = useState<string | null>(null);
   const [activeTrendId, setActiveTrendId] = useState<string | null>(null);
 
-  const handleTabChange = (tab: TabId) => {
-    setActiveTab(tab);
-    // Reset drill-down states when switching main tabs
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
     setActiveNarrativeId(null);
     setActiveTrendId(null);
   };
 
-  // Render logic for Week Report / Narrative Detail
-  const renderWeekReport = () => {
-    if (activeNarrativeId) {
-      const narrative = mockNarratives.find(n => n.id === activeNarrativeId);
-      if (narrative) {
-        return <NarrativeDetail narrative={narrative} onBack={() => setActiveNarrativeId(null)} />;
-      }
+  const handleCloseTab = (tabId: string) => {
+    const newTabs = openTabs.filter(t => t.id !== tabId);
+    setOpenTabs(newTabs);
+    if (activeTab === tabId) {
+      setActiveTab('archives');
     }
-    return <WeekReport onReadMore={setActiveNarrativeId} />;
   };
 
-  // Render logic for Trends / Trend Detail
-  const renderTrends = () => {
-    if (activeTrendId) {
-      const trend = mockTrends.find(t => t.id === activeTrendId);
-      if (trend) {
-        return <TrendDetail trend={trend} onBack={() => setActiveTrendId(null)} />;
+  const handleOpenWeek = (weekId: string) => {
+    if (!openTabs.find(t => t.id === weekId)) {
+      const week = mockWeeks.find(w => w.id === weekId);
+      if (week) {
+        setOpenTabs([...openTabs, { id: weekId, label: week.weekName, closable: true }]);
       }
     }
-    return <Trends onSelectTrend={setActiveTrendId} />;
+    setActiveTab(weekId);
+    setActiveNarrativeId(null);
+    setActiveTrendId(null);
+  };
+
+  const handleTrendClick = (trendId: string) => {
+    setActiveTab('trends');
+    setActiveTrendId(trendId);
+    setActiveNarrativeId(null);
+  };
+
+  const handleNarrativeClick = (narrativeId: string, weekId: string) => {
+    let targetTab = weekId;
+    if (weekId === mockWeeks[0].id) {
+      targetTab = 'front-page';
+    } else {
+      if (!openTabs.find(t => t.id === weekId)) {
+        const week = mockWeeks.find(w => w.id === weekId);
+        if (week) {
+          setOpenTabs(prev => [...prev, { id: weekId, label: week.weekName, closable: true }]);
+        }
+      }
+    }
+    setActiveTab(targetTab);
+    setActiveNarrativeId(narrativeId);
+    setActiveTrendId(null);
+  };
+
+  const renderContent = () => {
+    if (activeTab === 'trends') {
+      if (activeTrendId) {
+        const trend = mockTrends.find(t => t.id === activeTrendId);
+        if (trend) return <TrendDetail trend={trend} onBack={() => setActiveTrendId(null)} onNarrativeClick={handleNarrativeClick} />;
+      }
+      return <Trends onSelectTrend={handleTrendClick} />;
+    }
+
+    if (activeTab === 'archives') {
+      return <Archives onOpenWeek={handleOpenWeek} />;
+    }
+
+    const weekId = activeTab === 'front-page' ? mockWeeks[0].id : activeTab;
+    const week = mockWeeks.find(w => w.id === weekId);
+
+    if (week) {
+      if (activeNarrativeId) {
+        const narrative = week.narratives.find(n => n.id === activeNarrativeId);
+        if (narrative) return <NarrativeDetail narrative={narrative} onBack={() => setActiveNarrativeId(null)} />;
+      }
+      return <WeekReport week={week} onReadMore={(id) => setActiveNarrativeId(id)} onTrendClick={handleTrendClick} />;
+    }
+
+    return <div>Tab not found</div>;
   };
 
   return (
     <div className="app-container">
       <Masthead />
-      <FolderTabs activeTab={activeTab} onTabChange={handleTabChange} />
+      <FolderTabs 
+        tabs={openTabs} 
+        activeTab={activeTab} 
+        onTabChange={handleTabChange} 
+        onCloseTab={handleCloseTab} 
+      />
       
       <main className="folder-content">
-        {activeTab === 'week-report' && renderWeekReport()}
-        {activeTab === 'classifieds' && <Classifieds />}
-        {activeTab === 'trends' && renderTrends()}
-        <Business/>
+        {renderContent()}
       </main>
     </div>
   );
