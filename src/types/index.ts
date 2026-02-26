@@ -36,6 +36,14 @@ export interface Trend {
     '30 Days': { label: string; value: number }[];
     '90 Days': { label: string; value: number }[];
   };
+  creatorRisks: CreatorRisk[];
+}
+
+export interface TrendAlert {
+  id: string;
+  type: 'SHIFT' | 'NEW' | 'WARNING';
+  headline: string;
+  description: React.ReactNode;
 }
 
 export interface WeeklySummary {

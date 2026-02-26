@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockTrends, mockCreatorRisks } from '../../data/mockData';
+import { mockTrends, mockTrendAlerts } from '../../data/mockData';
 import { MiniGraph } from '../shared/MiniGraph';
 
 interface TrendsProps {
@@ -15,17 +15,23 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
       : a.totalEngagement - b.totalEngagement;
   });
 
+  const getAlertColor = (type: string) => {
+    if (type === 'WARNING') return 'var(--highlighter-pink)';
+    if (type === 'SHIFT') return 'var(--highlighter-yellow)';
+    return 'var(--highlighter-teal)';
+  };
+
   return (
     <section className="view-section">
       <div className="masthead" style={{ borderBottom: '1px solid var(--ink-heavy)', marginBottom: '20px', paddingBottom: '5px' }}>
         <h2>Trends Analytics</h2>
-        <p className="font-mono" style={{ fontSize: '0.9rem' }}>Temporal Activity & Creator Risk Scoring</p>
+        <p className="font-mono" style={{ fontSize: '0.9rem' }}>Temporal Activity & Market Shifts</p>
       </div>
 
       <div className="newspaper-grid">
         <div className="col-span-8 article-block">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px' }}>
-            <h3>Active Trends</h3>
+            <h3>All Trends</h3>
             <select 
               className="font-mono" 
               style={{ padding: '5px', backgroundColor: 'var(--bg-paper)', border: '1px solid var(--ink-heavy)' }}
@@ -40,7 +46,7 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
           <div>
             {sortedTrends.map(trend => (
               <div key={trend.id} className="trend-row" onClick={() => onSelectTrend(trend.id)}>
-                 <div className="trend-info">
+                <div className="trend-info">
                   <h4 style={{ fontSize: '1.3rem', marginBottom: '5px' }}>{trend.name}</h4>
                   <p style={{ fontSize: '0.9rem', marginBottom: '5px' }}>{trend.description}</p>
                   <div className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)', display: 'flex', gap: '15px' }}>
@@ -63,32 +69,30 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
           </div>
         </div>
 
+        {/* NEW: Market Shifts & Alerts */}
         <div className="col-span-4 vertical-divider article-block">
-          <h3 className="hl-pink" style={{ display: 'inline-block' }}>Creator Risk Monitor</h3>
-          <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>Automated toxicity and misinformation tracking across monitored channels.</p>
+          <h3 style={{ borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px', marginBottom: '15px' }}>
+            Market Shifts & Alerts
+          </h3>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px', fontFamily: "'Courier Prime', monospace", fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--ink-heavy)', textAlign: 'left' }}>
-                <th style={{ padding: '10px 0' }}>CHANNEL ID</th>
-                <th style={{ padding: '10px 0' }}>RISK SCORE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockCreatorRisks.filter(r => r.riskLevel !== 'MED').map((risk, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
-                  <td style={{ padding: '10px 0' }}>{risk.channelId}</td>
-                  <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
-                    {risk.score.toFixed(2)} [{risk.riskLevel}]
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          <div style={{ marginTop: '20px', padding: '15px', border: '1px solid var(--ink-heavy)', backgroundColor: 'var(--bg-aged)' }}>
-            <h4 style={{ marginBottom: '5px' }}>Analysis Note:</h4>
-            <p style={{ fontSize: '0.85rem', fontFamily: "'Courier Prime', monospace" }}>Elevated risk scores driven by repetitive unverified claims regarding market manipulation and unauthorized medical advice.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {mockTrendAlerts.map(alert => (
+              <div key={alert.id} style={{ border: '1px solid var(--ink-heavy)', padding: '15px', backgroundColor: 'var(--bg-aged)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span className="font-mono" style={{ 
+                    fontSize: '0.7rem', 
+                    fontWeight: 'bold', 
+                    backgroundColor: getAlertColor(alert.type), 
+                    padding: '2px 6px', 
+                    border: '1px solid var(--ink-heavy)' 
+                  }}>
+                    {alert.type}
+                  </span>
+                </div>
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '5px', lineHeight: 1.2 }}>{alert.headline}</h4>
+                <p style={{ fontSize: '0.9rem', margin: 0 }}>{alert.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
