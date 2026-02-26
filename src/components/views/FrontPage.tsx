@@ -1,5 +1,6 @@
 import React from 'react';
 import { Ticker } from '../shared/Ticker';
+import { Highlight } from '../shared/Highlight';
 import { mockNarratives } from '../../data/mockData';
 
 interface FrontPageProps {
@@ -16,14 +17,13 @@ export const FrontPage: React.FC<FrontPageProps> = ({ onReadMore }) => {
         <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>Weekly Aggregate Summary</span>
         <h2 style={{ fontSize: '1.8rem', marginTop: '10px' }}>AI Disruption and Market Fears Dominate Discourse</h2>
         <p style={{ fontSize: '1.1rem' }}>
-          This week's analysis of 15,000+ videos reveals a strong pivot towards economic anxiety. The primary narratives driving engagement involve the automation of entry-level tech jobs, speculative health diagnostics via wearables, and looming commercial real estate defaults.
+          This week's analysis of <Highlight color="yellow">15,000+ videos</Highlight> reveals a strong pivot towards economic anxiety. The primary narratives driving engagement involve the <Highlight color="yellow">automation of entry-level tech jobs</Highlight>, <Highlight color="teal">speculative health diagnostics</Highlight> via wearables, and looming <Highlight color="pink">commercial real estate defaults</Highlight>.
         </p>
       </div>
 
       {/* Newspaper Grid of Narratives */}
       <div className="newspaper-grid">
         {mockNarratives.map((narrative, index) => {
-          // Make the first item span 8 cols, others span 4 cols
           const colClass = index === 0 ? 'col-span-8' : 'col-span-4 vertical-divider';
           
           return (

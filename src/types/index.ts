@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type TabId = 'front-page' | 'classifieds' | 'trends';
 
 export interface Claim {
@@ -5,17 +7,17 @@ export interface Claim {
   creatorName: string;
   creatorInitials: string;
   riskScore: number;
-  extractedClaim: string;
-  originalQuote: string;
+  extractedClaim: React.ReactNode;
+  originalQuote: React.ReactNode;
   videoUrl: string;
 }
 
 export interface Narrative {
   id: string;
   headline: string;
-  subheadline: string;
-  summary: string;
-  fullText: string[];
+  subheadline: React.ReactNode;
+  summary: React.ReactNode;
+  fullText: React.ReactNode[];
   pageNumber: number;
   claims: Claim[];
 }
@@ -23,9 +25,9 @@ export interface Narrative {
 export interface Trend {
   id: string;
   name: string;
-  description: string;
+  description: React.ReactNode;
   sentiment: string;
   engagementData: number[];
   totalEngagement: number;
-  detailedAnalysis: string[];
+  detailedAnalysis: React.ReactNode[];
 }
