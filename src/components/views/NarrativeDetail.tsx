@@ -1,12 +1,14 @@
 import React from 'react';
 import type { Narrative } from '../../types';
+import { mockTrends } from '../../data/mockData';
 
 interface NarrativeDetailProps {
   narrative: Narrative;
   onBack: () => void;
+  onTrendClick: (trendId: string) => void;
 }
 
-export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, onBack }) => {
+export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, onBack, onTrendClick }) => {
   const getRiskClass = (score: number) => {
     if (score >= 0.8) return 'risk-high';
     if (score >= 0.4) return 'risk-med';
@@ -18,7 +20,20 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, onB
       <button className="btn-back" onClick={onBack}>&larr; Back to Report</button>
       
       <div className="masthead" style={{ borderBottom: '2px solid var(--ink-heavy)', marginBottom: '30px', paddingBottom: '15px', textAlign: 'left' }}>
-        <h1 style={{ fontSize: '3rem', textTransform: 'none', letterSpacing: 'normal' }}>{narrative.headline}</h1>
+        <h1 style={{ fontSize: '3rem', textTransform: 'none', letterSpacing: 'normal', marginBottom: '15px' }}>{narrative.headline}</h1>
+        
+        {/* Trend Chips */}
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', paddingLeft: '5px' }}>
+          {narrative.trendIds.map(tId => {
+            const trend = mockTrends.find(t => t.id === tId);
+            return trend ? (
+              <span key={tId} className="trend-chip" onClick={() => onTrendClick(tId)}>
+                <span className="trend-chip-text">{trend.name}</span>
+              </span>
+            ) : null;
+          })}
+        </div>
+
         <p className="lead" style={{ fontSize: '1.3rem', fontStyle: 'italic', marginTop: '10px' }}>{narrative.subheadline}</p>
       </div>
 

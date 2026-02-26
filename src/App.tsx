@@ -87,7 +87,15 @@ function App() {
     if (week) {
       if (activeNarrativeId) {
         const narrative = week.narratives.find(n => n.id === activeNarrativeId);
-        if (narrative) return <NarrativeDetail narrative={narrative} onBack={() => setActiveNarrativeId(null)} />;
+        if (narrative) {
+          return (
+            <NarrativeDetail 
+              narrative={narrative} 
+              onBack={() => setActiveNarrativeId(null)} 
+              onTrendClick={handleTrendClick}
+            />
+          );
+        }
       }
       return <WeekReport week={week} onReadMore={(id) => setActiveNarrativeId(id)} onTrendClick={handleTrendClick} />;
     }
