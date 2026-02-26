@@ -1,5 +1,5 @@
 import React from 'react';
-import { type TabId } from '../../types';
+import type { TabId } from '../../types';
 
 interface FolderTabsProps {
   activeTab: TabId;
@@ -8,9 +8,9 @@ interface FolderTabsProps {
 
 export const FolderTabs: React.FC<FolderTabsProps> = ({ activeTab, onTabChange }) => {
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'front-page', label: '1. The Front Page' },
-    { id: 'classifieds', label: '2. The Classifieds (Claims)' },
-    { id: 'business', label: '3. Business Section (Trends)' },
+    { id: 'front-page', label: '1. Weekly Report' },
+    { id: 'classifieds', label: '2. Raw Claims' },
+    { id: 'trends', label: '3. Trends Analytics' },
   ];
 
   return (

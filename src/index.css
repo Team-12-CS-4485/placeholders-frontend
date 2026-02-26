@@ -241,3 +241,105 @@ h1, h2, h3, h4, h5 {
   .folder-tabs { flex-wrap: wrap; }
   .masthead h1 { font-size: 2.5rem; }
 }
+
+/* --- NEW REFACTOR STYLES --- */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--ink-heavy);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+.btn-link:hover {
+  color: var(--ink-faded);
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--ink-faded);
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.btn-back:hover {
+  color: var(--ink-heavy);
+  text-decoration: underline;
+}
+
+.claim-card {
+  border: 1px solid var(--ink-heavy);
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: var(--bg-aged);
+}
+
+.claim-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dotted var(--ink-heavy);
+  padding-bottom: 10px;
+}
+
+.profile-pic {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--ink-heavy);
+  color: var(--bg-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.risk-badge {
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+.risk-high { background-color: #ffcccc; color: #d90000; border: 1px solid #d90000; }
+.risk-med { background-color: #fff0cc; color: #b37700; border: 1px solid #b37700; }
+.risk-low { background-color: #ccffcc; color: #006600; border: 1px solid #006600; }
+
+.trend-row {
+  border-bottom: 1px solid var(--ink-heavy);
+  padding: 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.trend-row:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.trend-info {
+  flex: 1;
+}
+
+.trend-graph-container {
+  width: 150px;
+  height: 50px;
+}
