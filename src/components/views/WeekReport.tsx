@@ -23,7 +23,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
 
       {/* Weekly Summary */}
       <div style={{ borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '20px', marginBottom: '30px' }}>
-        <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>{week.summary.dateRange}</span>
+        <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>Week summary</span>
         <h2 style={{ fontSize: '1.8rem', marginTop: '10px' }}>{week.summary.headline}</h2>
         <p style={{ fontSize: '1.1rem' }}>
           {week.summary.content}
@@ -31,6 +31,9 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
       </div>
 
       {/* Newspaper Grid of Narratives */}
+      <div style={{ paddingBottom: '20px' }}>
+        <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>Narratives</span>
+      </div>
       <div className="newspaper-grid">
         {week.narratives.map((narrative, index) => {
           const span = index === 0 ? 8 : 4;
@@ -44,12 +47,13 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
             <div key={narrative.id} className={`${colClass} article-block`}>
               <h2 style={{ fontSize: index === 0 ? '2.2rem' : '1.6rem', marginBottom: '5px' }}>{narrative.headline}</h2>
               
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '15px', paddingLeft: '5px' }}>
                 {narrative.trendIds.map(tId => {
                   const trend = mockTrends.find(t => t.id === tId);
                   return trend ? (
                     <span key={tId} className="trend-chip" onClick={() => onTrendClick(tId)}>
-                      {trend.name}
+                      {/* Added inner span to un-skew the text */}
+                      <span className="trend-chip-text">{trend.name}</span>
                     </span>
                   ) : null;
                 })}

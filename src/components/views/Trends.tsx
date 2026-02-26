@@ -40,7 +40,7 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
           <div>
             {sortedTrends.map(trend => (
               <div key={trend.id} className="trend-row" onClick={() => onSelectTrend(trend.id)}>
-                <div className="trend-info">
+                 <div className="trend-info">
                   <h4 style={{ fontSize: '1.3rem', marginBottom: '5px' }}>{trend.name}</h4>
                   <p style={{ fontSize: '0.9rem', marginBottom: '5px' }}>{trend.description}</p>
                   <div className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)', display: 'flex', gap: '15px' }}>
@@ -48,11 +48,12 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
                     <span>Recent (7d): {trend.recentSentiment}</span>
                   </div>
                 </div>
-                <div className="trend-graph-container" style={{ width: '200px', height: '60px', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ flex: 1 }}>
+                
+                <div className="trend-graph-container" style={{ width: '200px', height: 'auto', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ height: '45px', width: '100%' }}>
                     <MiniGraph data={trend.engagementData.map(d => d.value)} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontFamily: 'monospace', marginTop: '2px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontFamily: 'monospace', marginTop: '4px' }}>
                     <span>{trend.engagementData[0].date}</span>
                     <span>{trend.engagementData[trend.engagementData.length - 1].date}</span>
                   </div>

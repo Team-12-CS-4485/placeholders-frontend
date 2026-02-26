@@ -349,14 +349,21 @@ h1, h2, h3, h4, h5 {
   display: inline-block;
   background-color: var(--ink-heavy);
   color: var(--bg-paper);
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 4px 12px;
   font-family: 'Courier Prime', monospace;
   font-size: 0.75rem;
   cursor: pointer;
   text-transform: uppercase;
+  transform: skewX(-15deg);
+  transition: background-color 0.2s;
 }
 
 .trend-chip:hover {
   background-color: var(--ink-faded);
+}
+
+/* Un-skew the text so it remains readable and upright */
+.trend-chip-text {
+  display: inline-block;
+  transform: skewX(15deg);
 }

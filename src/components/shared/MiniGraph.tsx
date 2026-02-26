@@ -20,7 +20,13 @@ export const MiniGraph: React.FC<MiniGraphProps> = ({ data, color = 'var(--ink-h
   }).join(' ');
 
   return (
-    <svg viewBox="0 -5 100 110" width="100%" height="100%" preserveAspectRatio="none">
+    <svg 
+      viewBox="0 -5 100 110" 
+      width="100%" 
+      height="100%" 
+      preserveAspectRatio="none"
+      style={{ display: 'block' }}
+    >
       <polyline
         fill="none"
         stroke={color}
