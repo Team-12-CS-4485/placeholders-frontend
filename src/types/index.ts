@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabId = 'front-page' | 'classifieds' | 'trends';
+export type TabId = 'week-report' | 'classifieds' | 'trends';
 
 export interface Claim {
   id: string;

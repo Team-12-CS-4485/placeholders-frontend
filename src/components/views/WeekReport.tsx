@@ -2,11 +2,11 @@ import React from 'react';
 import { Ticker } from '../shared/Ticker';
 import { mockNarratives, mockWeeklySummary } from '../../data/mockData';
 
-interface FrontPageProps {
+interface WeekReportProps {
   onReadMore: (id: string) => void;
 }
 
-export const FrontPage: React.FC<FrontPageProps> = ({ onReadMore }) => {
+export const WeekReport: React.FC<WeekReportProps> = ({ onReadMore }) => {
   let currentSpan = 0;
 
   return (

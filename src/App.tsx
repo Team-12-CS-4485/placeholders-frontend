@@ -2,15 +2,16 @@ import { useState } from 'react';
 import type { TabId } from './types';
 import { Masthead } from './components/layout/Masthead';
 import { FolderTabs } from './components/layout/FolderTabs';
-import { FrontPage } from './components/views/FrontPage';
+import { WeekReport } from './components/views/WeekReport';
 import { NarrativeDetail } from './components/views/NarrativeDetail';
 import { Classifieds } from './components/views/Classifieds';
 import { Trends } from './components/views/Trends';
 import { TrendDetail } from './components/views/TrendDetail';
 import { mockNarratives, mockTrends } from './data/mockData';
+import { Business } from './components/views/Business';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('front-page');
+  const [activeTab, setActiveTab] = useState<TabId>('week-report');
   
   // State for drill-down views
   const [activeNarrativeId, setActiveNarrativeId] = useState<string | null>(null);
@@ -23,15 +24,15 @@ function App() {
     setActiveTrendId(null);
   };
 
-  // Render logic for Front Page / Narrative Detail
-  const renderFrontPage = () => {
+  // Render logic for Week Report / Narrative Detail
+  const renderWeekReport = () => {
     if (activeNarrativeId) {
       const narrative = mockNarratives.find(n => n.id === activeNarrativeId);
       if (narrative) {
         return <NarrativeDetail narrative={narrative} onBack={() => setActiveNarrativeId(null)} />;
       }
     }
-    return <FrontPage onReadMore={setActiveNarrativeId} />;
+    return <WeekReport onReadMore={setActiveNarrativeId} />;
   };
 
   // Render logic for Trends / Trend Detail
@@ -51,9 +52,10 @@ function App() {
       <FolderTabs activeTab={activeTab} onTabChange={handleTabChange} />
       
       <main className="folder-content">
-        {activeTab === 'front-page' && renderFrontPage()}
+        {activeTab === 'week-report' && renderWeekReport()}
         {activeTab === 'classifieds' && <Classifieds />}
         {activeTab === 'trends' && renderTrends()}
+        <Business/>
       </main>
     </div>
   );

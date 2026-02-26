@@ -8,7 +8,7 @@ interface FolderTabsProps {
 
 export const FolderTabs: React.FC<FolderTabsProps> = ({ activeTab, onTabChange }) => {
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'front-page', label: '1. Weekly Report' },
+    { id: 'week-report', label: '1. Weekly Report' },
     { id: 'classifieds', label: '2. Raw Claims' },
     { id: 'trends', label: '3. Trends Analytics' },
   ];
