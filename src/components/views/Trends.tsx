@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockTrends } from '../../data/mockData';
+import { mockTrends, mockCreatorRisks } from '../../data/mockData';
 import { MiniGraph } from '../shared/MiniGraph';
 
 interface TrendsProps {
@@ -67,18 +67,14 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
-                <td style={{ padding: '10px 0' }}>@CryptoKingX</td>
-                <td style={{ padding: '10px 0', color: '#d90000', fontWeight: 'bold' }}>0.92 [HIGH]</td>
-              </tr>
-              <tr style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
-                <td style={{ padding: '10px 0' }}>@MedTruthDaily</td>
-                <td style={{ padding: '10px 0', color: '#d90000', fontWeight: 'bold' }}>0.88 [HIGH]</td>
-              </tr>
-              <tr style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
-                <td style={{ padding: '10px 0' }}>@TechReviewer</td>
-                <td style={{ padding: '10px 0' }}>0.31 [LOW]</td>
-              </tr>
+              {mockCreatorRisks.filter(r => r.riskLevel !== 'MED').map((risk, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
+                  <td style={{ padding: '10px 0' }}>{risk.channelId}</td>
+                  <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
+                    {risk.score.toFixed(2)} [{risk.riskLevel}]
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
           

@@ -17,7 +17,7 @@ export const Masthead: React.FC = () => {
       </div>
       <div className="sub-meta">
         <span>Vol. CXCIV ... No. 59,321</span>
-        <span>Automated Daily Digest</span>
+        <span>Automated Weekly Digest</span>
         <span>{currentDate}</span>
       </div>
     </header>

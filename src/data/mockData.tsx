@@ -1,5 +1,22 @@
-import type { Narrative, Trend } from '../types';
+import type { Narrative, Trend, WeeklySummary, CreatorRisk, ClassifiedCategory } from '../types';
 import { Highlight } from '../components/shared/Highlight';
+
+export const mockTickerItems: string[] = [
+  'BREAKING: "GPT-5 writes production Python" [CONF: 92%]',
+  "RISK ALERT: Spikes in medical misinformation regarding 'Ozempic'",
+  "TRENDING: 'AI Automation in Manufacturing' +300% engagement in 24hrs",
+  "SENTIMENT SHIFT: 'Tech Layoffs 2026' leaning 78% negative"
+];
+
+export const mockWeeklySummary: WeeklySummary = {
+  dateRange: 'Weekly Aggregate Summary',
+  headline: 'AI Disruption and Market Fears Dominate Discourse',
+  content: (
+    <>
+      This week's analysis of <Highlight color="yellow">15,000+ videos</Highlight> reveals a strong pivot towards economic anxiety. The primary narratives driving engagement involve the <Highlight color="yellow">automation of entry-level tech jobs</Highlight>, <Highlight color="teal">speculative health diagnostics</Highlight> via wearables, and looming <Highlight color="pink">commercial real estate defaults</Highlight>.
+    </>
+  )
+};
 
 export const mockNarratives: Narrative[] = [
   {
@@ -120,6 +137,68 @@ export const mockTrends: Trend[] = [
       'Explosive growth triggered by viral TikToks crossing over to YouTube.',
       <>Extremely <Highlight color="pink">high risk of medical misinformation</Highlight>. Many creators are making unverified health claims.</>,
       'System recommends immediate flagging for brand safety.'
+    ]
+  }
+];
+
+export const mockCreatorRisks: CreatorRisk[] = [
+  { channelId: '@CryptoKingX', score: 0.92, riskLevel: 'HIGH' },
+  { channelId: '@MedTruthDaily', score: 0.88, riskLevel: 'HIGH' },
+  { channelId: '@TechReviewer', score: 0.31, riskLevel: 'LOW' },
+  { channelId: '@FinSense', score: 0.45, riskLevel: 'MED' }
+];
+
+export const mockClassifieds: ClassifiedCategory[] = [
+  {
+    title: 'TECH & AI',
+    items: [
+      {
+        clusterId: '409',
+        title: 'Hardware Acceleration Limits',
+        claims: [
+          { text: <>"<Highlight color="yellow">Nvidia GPU shortages will throttle AI startups by Q3.</Highlight>"</>, source: 'TechDaily', views: '1.2M' },
+          { text: '"Alternative chipmakers cannot meet current LLM training demands."' }
+        ]
+      },
+      {
+        clusterId: '412',
+        title: 'Software Engineering',
+        claims: [
+          { text: <>"<Highlight color="yellow">AI tools increase developer productivity by 40%.</Highlight>"</> }
+        ]
+      }
+    ]
+  },
+  {
+    title: 'HEALTH & WELLNESS',
+    items: [
+      {
+        clusterId: '811',
+        title: 'Wearable Diagnostics',
+        claims: [
+          { text: <>"<Highlight color="teal">Smart rings accurately predict fever onset 24 hours prior.</Highlight>"</>, source: 'DrMed', views: '400K' }
+        ]
+      },
+      {
+        clusterId: '815',
+        title: <span className="hl-pink">Weight Loss Injections</span>,
+        claims: [
+          { text: '"Over-the-counter alternatives yield identical results to prescription GLP-1s."', warning: '[SYSTEM WARNING: HIGH RISK MEDICAL MISINFO]' }
+        ]
+      }
+    ]
+  },
+  {
+    title: 'FINANCE & MARKETS',
+    items: [
+      {
+        clusterId: '204',
+        title: 'Housing Market Correction',
+        claims: [
+          { text: '"Commercial real estate defaults will trigger a 2008-style banking crisis."' },
+          { text: <>"<Highlight color="yellow">Interest rate drops are fully priced into current valuations.</Highlight>"</> }
+        ]
+      }
     ]
   }
 ];

@@ -31,3 +31,33 @@ export interface Trend {
   totalEngagement: number;
   detailedAnalysis: React.ReactNode[];
 }
+
+export interface WeeklySummary {
+  dateRange: string;
+  headline: string;
+  content: React.ReactNode;
+}
+
+export interface CreatorRisk {
+  channelId: string;
+  score: number;
+  riskLevel: 'HIGH' | 'MED' | 'LOW';
+}
+
+export interface ClassifiedClaim {
+  text: React.ReactNode;
+  source?: string;
+  views?: string;
+  warning?: string;
+}
+
+export interface ClassifiedItem {
+  clusterId: string;
+  title: React.ReactNode;
+  claims: ClassifiedClaim[];
+}
+
+export interface ClassifiedCategory {
+  title: string;
+  items: ClassifiedItem[];
+}
