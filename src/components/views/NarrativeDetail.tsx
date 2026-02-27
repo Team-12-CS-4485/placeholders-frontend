@@ -49,22 +49,37 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, onB
         <div className="col-span-4 vertical-divider">
           <h3 style={{ borderBottom: '1px solid var(--ink-heavy)', marginBottom: '15px', paddingBottom: '5px' }}>Extracted Claims</h3>
           
-          {narrative.claims.map(claim => (
-            <div key={claim.id} className="claim-card">
-              <div className="claim-header">
-                <div className="profile-pic">{claim.creatorInitials}</div>
-                <span className="font-mono" style={{ fontWeight: 'bold' }}>{claim.creatorName}</span>
-                <span className={`risk-badge ${getRiskClass(claim.riskScore)}`}>
-                  Risk: {claim.riskScore.toFixed(2)}
-                </span>
+          {narrative.claims.map(claim => {
+            const youtubeHandle = claim.creatorName.startsWith('@') ? claim.creatorName : `@${claim.creatorName}`;
+            
+            return (
+              <div key={claim.id} className="claim-card">
+                <div className="claim-header">
+                  <div className="profile-pic">{claim.creatorInitials}</div>
+                  
+                  {/* Replaced span with anchor tag */}
+                  <a 
+                    href={`https://youtube.com/${youtubeHandle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono clickable-title" 
+                    style={{ fontWeight: 'bold', color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {claim.creatorName}
+                  </a>
+                  
+                  <span className={`risk-badge ${getRiskClass(claim.riskScore)}`}>
+                    Risk: {claim.riskScore.toFixed(2)}
+                  </span>
+                </div>
+                <h4 style={{ fontSize: '1.1rem', marginBottom: '10px' }}>"{claim.extractedClaim}"</h4>
+                <p style={{ fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--ink-faded)', marginBottom: '10px' }}>
+                  Transcript: {claim.originalQuote}
+                </p>
+                <a href={claim.videoUrl} className="font-mono clickable-title" style={{ fontSize: '0.8rem', color: 'var(--ink-heavy)', textDecoration: 'none' }}>[View Source Video]</a>
               </div>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: '10px' }}>"{claim.extractedClaim}"</h4>
-              <p style={{ fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--ink-faded)', marginBottom: '10px' }}>
-                Transcript: {claim.originalQuote}
-              </p>
-              <a href={claim.videoUrl} className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-heavy)' }}>[View Source Video]</a>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
