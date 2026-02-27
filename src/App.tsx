@@ -17,6 +17,7 @@ export interface TabData {
   trendId?: string | null;
   baseLabel: string;
   closable: boolean;
+  parentId?: string; // Links dynamic tabs to their static/parent group
 }
 
 function App() {
@@ -30,17 +31,22 @@ function App() {
 
   const [activeTabId, setActiveTabId] = useState<string>(`week-${mockWeeks[0].id}`);
 
-  // Helper to update the currently active tab's state
-  const updateActiveTab = (updates: Partial<TabData>) => {
-    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, ...updates } : t));
-  };
-
   const handleCloseTab = (tabId: string) => {
-    const newTabs = tabs.filter(t => t.id !== tabId);
-    setTabs(newTabs);
-    if (activeTabId === tabId) {
-      setActiveTabId('archives'); // Fallback to archives if closing the active tab
+    // If a parent tab closes, close its children too
+    const tabsToRemove = new Set([tabId, ...tabs.filter(t => t.parentId === tabId).map(t => t.id)]);
+    const newTabs = tabs.filter(t => !tabsToRemove.has(t.id));
+    
+    // Determine fallback tab if active tab is closed
+    if (tabsToRemove.has(activeTabId)) {
+      const closingTab = tabs.find(t => t.id === activeTabId);
+      if (closingTab?.parentId && newTabs.find(t => t.id === closingTab.parentId)) {
+        setActiveTabId(closingTab.parentId); // Fall back to parent
+      } else {
+        setActiveTabId(newTabs[0]?.id || 'archives');
+      }
     }
+    
+    setTabs(newTabs);
   };
 
   const handleOpenWeek = (weekId: string) => {
@@ -54,36 +60,87 @@ function App() {
     setActiveTabId(targetTabId);
   };
 
-  // Drill-down handlers
+  // Drill-down handlers (Now span new tabs)
   const handleReadMore = (narrativeId: string) => {
-    updateActiveTab({ narrativeId });
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    if (activeTab && activeTab.type === 'week') {
+      const narrativeTabId = `narrative-${narrativeId}`;
+      const week = mockWeeks.find(w => w.id === activeTab.weekId);
+      const narrative = week?.narratives.find(n => n.id === narrativeId);
+      const label = narrative ? narrative.headline : 'Narrative Detail';
+
+      setTabs(prev => {
+        if (!prev.find(t => t.id === narrativeTabId)) {
+          return [...prev, {
+            id: narrativeTabId,
+            type: 'week',
+            weekId: activeTab.weekId,
+            narrativeId,
+            baseLabel: label,
+            closable: true,
+            parentId: `week-${activeTab.weekId}`
+          }];
+        }
+        return prev;
+      });
+      setActiveTabId(narrativeTabId);
+    }
   };
 
   const handleTrendClick = (trendId: string) => {
-    // Switch to the Trends tab and set its drill-down state
-    setTabs(prev => prev.map(t => t.id === 'trends' ? { ...t, trendId } : t));
-    setActiveTabId('trends');
+    const trendTabId = `trend-${trendId}`;
+    const trend = mockTrends.find(t => t.id === trendId);
+    const label = trend ? trend.name : 'Trend Detail';
+
+    setTabs(prev => {
+      if (!prev.find(t => t.id === trendTabId)) {
+        return [...prev, {
+          id: trendTabId,
+          type: 'trends',
+          trendId,
+          baseLabel: label,
+          closable: true,
+          parentId: 'trends'
+        }];
+      }
+      return prev;
+    });
+    setActiveTabId(trendTabId);
   };
 
   const handleNarrativeClickFromTrend = (narrativeId: string, weekId: string) => {
-    const targetTabId = `week-${weekId}`;
-    const existingTab = tabs.find(t => t.id === targetTabId);
+    const parentTabId = `week-${weekId}`;
+    const narrativeTabId = `narrative-${narrativeId}`;
 
-    if (existingTab) {
-      // Update existing week tab and switch to it
-      setTabs(prev => prev.map(t => t.id === targetTabId ? { ...t, narrativeId } : t));
-    } else {
-      // Open the week tab in the background, set its narrative, and switch to it
-      const week = mockWeeks.find(w => w.id === weekId);
-      if (week) {
-        setTabs(prev => [...prev, { id: targetTabId, type: 'week', weekId, narrativeId, baseLabel: week.weekName, closable: true }]);
+    const week = mockWeeks.find(w => w.id === weekId);
+    const narrative = week?.narratives.find(n => n.id === narrativeId);
+    const label = narrative ? narrative.headline : 'Narrative Detail';
+
+    setTabs(prev => {
+      const newTabs = [...prev];
+      // Auto-open parent week tab if not present
+      if (!newTabs.find(t => t.id === parentTabId)) {
+        newTabs.push({ id: parentTabId, type: 'week', weekId, baseLabel: week?.weekName || 'Week', closable: true });
       }
-    }
-    setActiveTabId(targetTabId);
+      // Open the narrative child tab
+      if (!newTabs.find(t => t.id === narrativeTabId)) {
+        newTabs.push({
+          id: narrativeTabId,
+          type: 'week',
+          weekId,
+          narrativeId,
+          baseLabel: label,
+          closable: true,
+          parentId: parentTabId
+        });
+      }
+      return newTabs;
+    });
+    setActiveTabId(narrativeTabId);
   };
 
   const handleBack = () => {
-    updateActiveTab({ narrativeId: null, trendId: null });
+    handleCloseTab(activeTabId);
   };
 
   // Render logic based on the ACTIVE tab's internal state
