@@ -297,7 +297,19 @@ h1, h2, h3, h4, h5 {
   .masthead h1 { font-size: 2.5rem; }
 }
 
-/* --- NEW REFACTOR STYLES --- */
+/* --- CLICKABLE TITLES --- */
+.clickable-title {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clickable-title:hover {
+  color: var(--ink-faded);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
 .btn-link {
   background: none;
   border: none;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { TabData } from '../../App';
 
 interface FolderTabsProps {
@@ -14,14 +14,27 @@ export const FolderTabs: React.FC<FolderTabsProps> = ({
   onTabChange,
   onCloseTab
 }) => {
+  const scrollContainerRef = useRef<HTMLElement>(null);
 
-  // Isolate parent "folder" tabs
+  // Auto-scroll to the active tab whenever it changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const activeElement = scrollContainerRef.current.querySelector('.tab.active');
+      if (activeElement) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center' // Centers the tab in the scrollable area
+        });
+      }
+    }
+  }, [activeTabId]);
+
   const baseTabs = tabs.filter(tab => !tab.parentId);
 
   return (
-    <nav className="folder-tabs-container" aria-label="Main Navigation">
+    <nav ref={scrollContainerRef} className="folder-tabs-container" aria-label="Main Navigation">
       {baseTabs.map((baseTab) => {
-        // Find dynamically generated child tabs belonging to this folder
         const children = tabs.filter(t => t.parentId === baseTab.id);
 
         return (
