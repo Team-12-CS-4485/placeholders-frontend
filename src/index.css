@@ -1,68 +1,400 @@
+/* --- CSS VARIABLES & THEMING --- */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg-paper: #F4F1EA;
+  --bg-aged: #EAE5D9;
+  --ink-heavy: #111111;
+  --ink-standard: #333333;
+  --ink-faded: #666666;
+  --highlighter-yellow: #FBFF00;
+  --highlighter-pink: #FF7EB3;
+  --highlighter-teal: #00FFC4;
+  --folder-active: #F4F1EA;
+  --folder-inactive: #D4C17F;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* --- BASE STYLES & TYPOGRAPHY --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: var(--bg-paper);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  color: var(--ink-standard);
+  font-family: 'Lora', serif;
+  line-height: 1.6;
+  padding: 20px;
 }
 
-h1 {
-  font-size: 3.2em;
+h1, h2, h3, h4, h5 {
+  font-family: 'Playfair Display', serif;
+  color: var(--ink-heavy);
+}
+
+.font-mono {
+  font-family: 'Courier Prime', monospace;
+}
+
+/* --- HIGHLIGHTER EFFECTS --- */
+.hl-yellow { background: linear-gradient(180deg, transparent 60%, var(--highlighter-yellow) 40%); }
+.hl-pink { background: linear-gradient(180deg, transparent 60%, var(--highlighter-pink) 40%); }
+.hl-teal { background: linear-gradient(180deg, transparent 60%, var(--highlighter-teal) 40%); }
+
+/* --- LAYOUT WRAPPERS --- */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --- HEADER & MASTHEAD --- */
+.masthead {
+  text-align: center;
+  border-bottom: 3px solid var(--ink-heavy);
+  padding-bottom: 10px;
+  margin-bottom: 30px;
+}
+
+.masthead h1 {
+  font-size: 4rem;
+  text-transform: uppercase;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.masthead .sub-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.85rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  border-top: 1px solid var(--ink-heavy);
+  border-bottom: 1px solid var(--ink-heavy);
+  padding: 5px 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+/* --- NAVIGATION (MANILA FOLDERS) --- */
+/* --- NAVIGATION (MANILA FOLDERS) --- */
+.folder-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 10;
+  flex-wrap: wrap; /* Allows tabs to wrap if there are too many */
+}
+
+.tab {
+  background-color: var(--folder-inactive);
+  border: 1px solid var(--ink-heavy);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 12px 20px;
+  font-family: 'Courier Prime', monospace;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  color: var(--ink-heavy);
+  box-shadow: inset 0 2px 5px rgba(255,255,255,0.2);
+  transition: background-color 0.2s;
+  
+  /* Flexbox for label and close button */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 280px; /* Prevents dynamic titles from getting too wide */
+}
+
+.tab-label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 0.5;
+  color: var(--ink-heavy);
+  opacity: 0.6;
+  padding: 0 2px;
+}
+
+.tab-close-btn:hover {
+  opacity: 1;
+  color: #d90000;
+}
+
+.tab:hover:not(.active) {
+  background-color: #E6D598;
+}
+
+.tab.active {
+  background-color: var(--folder-active);
+  border-bottom: 1px solid var(--folder-active);
+  padding-top: 16px;
+  margin-top: -4px;
+  z-index: 20;
+}
+
+/* --- MAIN FOLDER CONTENT AREA --- */
+.folder-content {
+  border: 1px solid var(--ink-heavy);
+  padding: 30px;
+  background-color: var(--folder-active);
+  position: relative;
+  z-index: 5;
+  min-height: 600px;
+}
+
+.view-section {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- NEWSPAPER GRID STYLES --- */
+.newspaper-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 30px;
+}
+
+.col-span-12 { grid-column: span 12; }
+.col-span-8 { grid-column: span 8; }
+.col-span-4 { grid-column: span 4; }
+.col-span-6 { grid-column: span 6; }
+.col-span-3 { grid-column: span 3; }
+
+.article-block {
+  text-align: justify;
+}
+
+.article-block h2 {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.article-block p {
+  margin-bottom: 15px;
+  text-indent: 20px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.article-block p.lead {
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-indent: 0;
+}
+
+.vertical-divider {
+  border-left: 1px solid var(--ink-heavy);
+  padding-left: 30px;
+}
+
+.horizontal-divider {
+  border-top: 2px solid var(--ink-heavy);
+  margin: 20px 0;
+  padding-top: 20px;
+}
+
+/* --- TICKER TAPE --- */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--ink-heavy);
+  color: var(--bg-paper);
+  padding: 5px 0;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  border: 1px solid var(--ink-heavy);
+}
+
+.ticker {
+  display: inline-block;
+  animation: ticker 30s linear infinite;
+  padding-left: 100%;
+}
+
+.ticker-item {
+  display: inline-block;
+  padding: 0 2rem;
+}
+
+@keyframes ticker {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* --- CLASSIFIEDS / DATA LISTS --- */
+.classified-list {
+  list-style: none;
+  border-top: 2px solid var(--ink-heavy);
+}
+
+.classified-item {
+  border-bottom: 1px solid var(--ink-heavy);
+  padding: 15px 0;
+}
+
+.classified-meta {
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.8rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.classified-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 900px) {
+  .newspaper-grid { display: flex; flex-direction: column; }
+  .vertical-divider { border-left: none; padding-left: 0; border-top: 1px solid var(--ink-heavy); margin-top: 20px; padding-top: 20px; }
+  .col-span-12, .col-span-8, .col-span-4, .col-span-6, .col-span-3 { grid-column: span 12; }
+  .folder-tabs { flex-wrap: wrap; }
+  .masthead h1 { font-size: 2.5rem; }
+}
+
+/* --- NEW REFACTOR STYLES --- */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--ink-heavy);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+.btn-link:hover {
+  color: var(--ink-faded);
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--ink-faded);
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.btn-back:hover {
+  color: var(--ink-heavy);
+  text-decoration: underline;
+}
+
+.claim-card {
+  border: 1px solid var(--ink-heavy);
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: var(--bg-aged);
+}
+
+.claim-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dotted var(--ink-heavy);
+  padding-bottom: 10px;
+}
+
+.profile-pic {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--ink-heavy);
+  color: var(--bg-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.risk-badge {
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+.risk-high { background-color: #ffcccc; color: #d90000; border: 1px solid #d90000; }
+.risk-med { background-color: #fff0cc; color: #b37700; border: 1px solid #b37700; }
+.risk-low { background-color: #ccffcc; color: #006600; border: 1px solid #006600; }
+
+.trend-row {
+  border-bottom: 1px solid var(--ink-heavy);
+  padding: 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.trend-row:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.trend-info {
+  flex: 1;
+}
+
+.trend-graph-container {
+  width: 150px;
+  height: 50px;
+}
+
+/* --- TREND CHIPS --- */
+.trend-chip {
+  display: inline-block;
+  background-color: var(--ink-heavy);
+  color: var(--bg-paper);
+  padding: 4px 12px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transform: skewX(-15deg);
+  transition: background-color 0.2s;
+}
+
+.trend-chip:hover {
+  background-color: var(--ink-faded);
+}
+
+/* Un-skew the text so it remains readable and upright */
+.trend-chip-text {
+  display: inline-block;
+  transform: skewX(15deg);
 }
