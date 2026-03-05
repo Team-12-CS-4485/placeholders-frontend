@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { TabData } from '../../App';
-import { mockWeeks, mockTrends } from '../../data/mockData';
 
 interface FolderTabsProps {
   tabs: TabData[];
@@ -15,60 +14,69 @@ export const FolderTabs: React.FC<FolderTabsProps> = ({
   onTabChange,
   onCloseTab
 }) => {
+  const scrollContainerRef = useRef<HTMLElement>(null);
 
-  // Generate breadcrumb-style label
-  const getDisplayLabel = (tab: TabData) => {
-    // Week narrative drill-down
-    if (tab.type === 'week' && tab.narrativeId) {
-      const narrative = mockWeeks
-        .find(w => w.id === tab.weekId)
-        ?.narratives.find(n => n.id === tab.narrativeId);
-
-      if (narrative) {
-        return `${tab.baseLabel} > ${narrative.headline}`;
+  // Auto-scroll to the active tab whenever it changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const activeElement = scrollContainerRef.current.querySelector('.tab.active');
+      if (activeElement) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center' // Centers the tab in the scrollable area
+        });
       }
     }
+  }, [activeTabId]);
 
-    // Trend drill-down
-    if (tab.type === 'trends' && tab.trendId) {
-      const trend = mockTrends.find(t => t.id === tab.trendId);
-
-      if (trend) {
-        return `${tab.baseLabel} > ${trend.name}`;
-      }
-    }
-
-    return tab.baseLabel;
-  };
+  const baseTabs = tabs.filter(tab => !tab.parentId);
 
   return (
-    <nav className="folder-tabs" aria-label="Main Navigation">
-      {tabs.map((tab) => {
-        const displayLabel = getDisplayLabel(tab);
+    <nav ref={scrollContainerRef} className="folder-tabs-container" aria-label="Main Navigation">
+      {baseTabs.map((baseTab) => {
+        const children = tabs.filter(t => t.parentId === baseTab.id);
 
         return (
-          <div
-            key={tab.id}
-            className={`tab ${activeTabId === tab.id ? 'active' : ''}`}
-            onClick={() => onTabChange(tab.id)}
-            title={displayLabel}
-          >
-            <span className="tab-label-text">
-              {displayLabel}
-            </span>
+          <div key={`group-${baseTab.id}`} className="tab-group">
+            {/* The Parent Tab */}
+            <div
+              className={`tab ${activeTabId === baseTab.id ? 'active' : ''}`}
+              onClick={() => onTabChange(baseTab.id)}
+              title={baseTab.baseLabel}
+            >
+              <span className="tab-label-text">
+                {baseTab.baseLabel}
+              </span>
+              {baseTab.closable && (
+                <button
+                  className="tab-close-btn"
+                  onClick={(e) => { e.stopPropagation(); onCloseTab(baseTab.id); }}
+                  aria-label="Close tab"
+                >&times;</button>
+              )}
+            </div>
 
-            {tab.closable && (
-              <button
-                className="tab-close-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCloseTab(tab.id);
-                }}
-                aria-label="Close tab"
+            {/* Child Dynamic Tabs */}
+            {children.map(childTab => (
+              <div
+                key={childTab.id}
+                className={`tab child-tab ${activeTabId === childTab.id ? 'active' : ''}`}
+                onClick={() => onTabChange(childTab.id)}
+                title={childTab.baseLabel}
               >
-                &times;
-              </button>
-            )}
+                <span className="tab-label-text">
+                  {childTab.baseLabel}
+                </span>
+                {childTab.closable && (
+                  <button
+                    className="tab-close-btn"
+                    onClick={(e) => { e.stopPropagation(); onCloseTab(childTab.id); }}
+                    aria-label="Close detail tab"
+                  >&times;</button>
+                )}
+              </div>
+            ))}
           </div>
         );
       })}

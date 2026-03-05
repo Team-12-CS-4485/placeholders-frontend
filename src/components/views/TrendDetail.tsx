@@ -73,7 +73,8 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
             {relatedNarratives.map(n => (
               <li key={n.id} className="classified-item" style={{ cursor: 'pointer' }} onClick={() => onNarrativeClick(n.id, n.weekId)}>
                 <span className="classified-meta">{n.weekName}</span>
-                <div className="classified-title" style={{ fontSize: '1rem' }}>{n.headline}</div>
+                {/* Applied clickable-title class here */}
+                <div className="classified-title clickable-title" style={{ fontSize: '1rem' }}>{n.headline}</div>
               </li>
             ))}
             {relatedNarratives.length === 0 && (
@@ -94,14 +95,30 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
               </tr>
             </thead>
             <tbody>
-              {trend.creatorRisks.map((risk, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
-                  <td style={{ padding: '10px 0' }}>{risk.channelId}</td>
-                  <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
-                    {risk.score.toFixed(2)} [{risk.riskLevel}]
-                  </td>
-                </tr>
-              ))}
+              {trend.creatorRisks.map((risk, idx) => {
+                // Ensure there is an '@' symbol for the youtube URL route
+                const youtubeHandle = risk.channelId.startsWith('@') ? risk.channelId : `@${risk.channelId}`;
+                
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
+                    <td style={{ padding: '10px 0' }}>
+                      {/* Wrapped channel ID in a YouTube hyperlink */}
+                      <a 
+                        href={`https://youtube.com/${youtubeHandle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="clickable-title"
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                      >
+                        {risk.channelId}
+                      </a>
+                    </td>
+                    <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
+                      {risk.score.toFixed(2)} [{risk.riskLevel}]
+                    </td>
+                  </tr>
+                );
+              })}
               {trend.creatorRisks.length === 0 && (
                 <tr>
                   <td colSpan={2} style={{ padding: '10px 0', fontStyle: 'italic', color: 'var(--ink-faded)' }}>No high-risk creators detected.</td>

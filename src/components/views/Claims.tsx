@@ -12,6 +12,7 @@ const getRiskLevel = (score: number): 'HIGH' | 'MED' | 'LOW' => {
 
 const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
   const riskLevel = getRiskLevel(claim.riskScore);
+  const youtubeHandle = claim.creatorName.startsWith('@') ? claim.creatorName : `@${claim.creatorName}`;
 
   return (
     <div style={{ marginBottom: '12px' }}>
@@ -26,7 +27,16 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
           "{claim.extractedClaim}"
         </span>{' '}
         <span style={{ fontSize: '0.8rem', color: 'var(--ink-faded)', fontFamily: "'Courier Prime', monospace" }}>
-          (Source: {claim.creatorName})
+          (Source:{' '}
+          <a 
+            href={`https://youtube.com/${youtubeHandle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="clickable-title"
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            {claim.creatorName}
+          </a>)
         </span>
       </p>
       {riskLevel === 'HIGH' && (
