@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { mockTrends } from '../../data/mockData';
 import type { WeekData } from '../../types';
 
@@ -9,7 +9,7 @@ interface WeekReportProps {
 }
 
 export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTrendClick }) => {
-  let currentSpan = 0;
+  const [currentSpan, setCurrentSpan] = useState(0);
 
   return (
     <section className="view-section">
@@ -36,7 +36,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
           const span = index === 0 ? 8 : 4;
           
           const isNewLine = currentSpan % 12 === 0;
-          currentSpan += span;
+          setCurrentSpan(currentSpan + span);
           
           const colClass = `col-span-${span} ${!isNewLine ? 'vertical-divider' : ''}`.trim();
           
