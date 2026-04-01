@@ -9,7 +9,26 @@ interface WeekReportProps {
 }
 
 export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTrendClick }) => {
-  let currentSpan = 0;
+  const { items: narrativesWithLayout } = week.narratives.reduce(
+    (acc, narrative, index) => {
+      const span = index === 0 ? 8 : 4;
+      const isNewLine = acc.currentSpan % 12 === 0;
+
+      return {
+        currentSpan: acc.currentSpan + span,
+        items: [...acc.items, { narrative, index, span, isNewLine }],
+      };
+    },
+    {
+      currentSpan: 0,
+      items: [] as Array<{
+        narrative: WeekData['narratives'][number];
+        index: number;
+        span: number;
+        isNewLine: boolean;
+      }>,
+    }
+  );
 
   return (
     <section className="view-section">
@@ -32,12 +51,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
         <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>Narratives</span>
       </div>
       <div className="newspaper-grid">
-        {week.narratives.map((narrative, index) => {
-          const span = index === 0 ? 8 : 4;
-          
-          const isNewLine = currentSpan % 12 === 0;
-          currentSpan += span;
-          
+        {narrativesWithLayout.map(({ narrative, index, span, isNewLine }) => {
           const colClass = `col-span-${span} ${!isNewLine ? 'vertical-divider' : ''}`.trim();
           
           return (
