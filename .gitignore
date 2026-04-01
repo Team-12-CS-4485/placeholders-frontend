@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+claude.md
+.claude/settings.local.json
+tmp/cache/vite/last-build-production.json
