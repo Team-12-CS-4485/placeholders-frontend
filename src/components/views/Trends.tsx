@@ -68,7 +68,7 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
             ))}
           </div>
         </div>
-
+        
         {/* NEW: Market Shifts & Alerts */}
         <div className="col-span-4 vertical-divider article-block">
           <h3 style={{ borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px', marginBottom: '15px' }}>
@@ -89,7 +89,8 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
                     {alert.type}
                   </span>
                 </div>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: '5px', lineHeight: 1.2 }}>{alert.headline}</h4>
+                {/* Added clickable-title class here */}
+                <h4 className="clickable-title" style={{ fontSize: '1.1rem', marginBottom: '5px', lineHeight: 1.2 }}>{alert.headline}</h4>
                 <p style={{ fontSize: '0.9rem', margin: 0 }}>{alert.description}</p>
               </div>
             ))}

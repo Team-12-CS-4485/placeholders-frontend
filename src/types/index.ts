@@ -13,6 +13,7 @@ export interface Claim {
 export interface Narrative {
   id: string;
   weekId: string;
+  category: string;
   headline: string;
   subheadline: React.ReactNode;
   summary: React.ReactNode;
