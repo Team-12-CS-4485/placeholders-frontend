@@ -1,7 +1,11 @@
 import React from 'react';
 import { Ticker } from '../shared/Ticker';
 
-export const Masthead: React.FC = () => {
+interface MastheadProps {
+  tickerItems: string[];
+}
+
+export const Masthead: React.FC<MastheadProps> = ({ tickerItems }) => {
   const dateOptions: Intl.DateTimeFormatOptions = { 
     weekday: 'long', 
     year: 'numeric', 
@@ -21,7 +25,7 @@ export const Masthead: React.FC = () => {
         <span>Automated Weekly Digest</span>
         <span>{currentDate}</span>
       </div>
-      <Ticker />
+      <Ticker items={tickerItems} />
     </header>
   );
 };
