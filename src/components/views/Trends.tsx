@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { mockTrends, mockTrendAlerts } from '../../data/mockData';
+import type { Trend, TrendAlert } from '../../types';
 import { MiniGraph } from '../shared/MiniGraph';
 
 interface TrendsProps {
+  trends: Trend[];
+  trendAlerts: TrendAlert[];
   onSelectTrend: (id: string) => void;
 }
 
-export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
+export const Trends: React.FC<TrendsProps> = ({ trends, trendAlerts, onSelectTrend }) => {
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
 
-  const sortedTrends = [...mockTrends].sort((a, b) => {
-    return sortOrder === 'most' 
-      ? b.totalEngagement - a.totalEngagement 
+  const sortedTrends = [...trends].sort((a, b) => {
+    return sortOrder === 'most'
+      ? b.totalEngagement - a.totalEngagement
       : a.totalEngagement - b.totalEngagement;
   });
 
@@ -32,8 +34,8 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
         <div className="col-span-8 article-block">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px' }}>
             <h3>All Trends</h3>
-            <select 
-              className="font-mono" 
+            <select
+              className="font-mono"
               style={{ padding: '5px', backgroundColor: 'var(--bg-paper)', border: '1px solid var(--ink-heavy)' }}
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'most' | 'least')}
@@ -54,46 +56,48 @@ export const Trends: React.FC<TrendsProps> = ({ onSelectTrend }) => {
                     <span>Recent (7d): {trend.recentSentiment}</span>
                   </div>
                 </div>
-                
+
                 <div className="trend-graph-container" style={{ width: '200px', height: 'auto', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ height: '45px', width: '100%' }}>
                     <MiniGraph data={trend.engagementData.map(d => d.value)} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontFamily: 'monospace', marginTop: '4px' }}>
-                    <span>{trend.engagementData[0].date}</span>
-                    <span>{trend.engagementData[trend.engagementData.length - 1].date}</span>
+                    <span>{trend.engagementData[0]?.date}</span>
+                    <span>{trend.engagementData[trend.engagementData.length - 1]?.date}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
-        {/* NEW: Market Shifts & Alerts */}
+
+        {/* Market Shifts & Alerts */}
         <div className="col-span-4 vertical-divider article-block">
           <h3 style={{ borderBottom: '2px solid var(--ink-heavy)', paddingBottom: '10px', marginBottom: '15px' }}>
             Market Shifts & Alerts
           </h3>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {mockTrendAlerts.map(alert => (
+            {trendAlerts.map(alert => (
               <div key={alert.id} style={{ border: '1px solid var(--ink-heavy)', padding: '15px', backgroundColor: 'var(--bg-aged)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span className="font-mono" style={{ 
-                    fontSize: '0.7rem', 
-                    fontWeight: 'bold', 
-                    backgroundColor: getAlertColor(alert.type), 
-                    padding: '2px 6px', 
-                    border: '1px solid var(--ink-heavy)' 
+                  <span className="font-mono" style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    backgroundColor: getAlertColor(alert.type),
+                    padding: '2px 6px',
+                    border: '1px solid var(--ink-heavy)'
                   }}>
                     {alert.type}
                   </span>
                 </div>
-                {/* Added clickable-title class here */}
                 <h4 className="clickable-title" style={{ fontSize: '1.1rem', marginBottom: '5px', lineHeight: 1.2 }}>{alert.headline}</h4>
                 <p style={{ fontSize: '0.9rem', margin: 0 }}>{alert.description}</p>
               </div>
             ))}
+            {trendAlerts.length === 0 && (
+              <p className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)' }}>No alerts at this time.</p>
+            )}
           </div>
         </div>
       </div>

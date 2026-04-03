@@ -1,11 +1,14 @@
 import React from 'react';
-import { mockTickerItems } from '../../data/mockData';
 
-export const Ticker: React.FC = () => {
+interface TickerProps {
+  items: string[];
+}
+
+export const Ticker: React.FC<TickerProps> = ({ items }) => {
   return (
     <div className="ticker-wrap">
       <div className="ticker">
-        {mockTickerItems.map((item, index) => (
+        {items.map((item, index) => (
           <span key={index} className="ticker-item">{item}</span>
         ))}
       </div>

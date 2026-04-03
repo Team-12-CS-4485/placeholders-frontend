@@ -1,14 +1,14 @@
 import React from 'react';
-import { mockTrends } from '../../data/mockData';
-import type { WeekData } from '../../types';
+import type { WeekData, Trend } from '../../types';
 
 interface WeekReportProps {
   week: WeekData;
+  trends: Trend[];
   onReadMore: (id: string) => void;
   onTrendClick: (trendId: string) => void;
 }
 
-export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTrendClick }) => {
+export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore, onTrendClick }) => {
   const { items: narrativesWithLayout } = week.narratives.reduce(
     (acc, narrative, index) => {
       const span = index === 0 ? 8 : 4;
@@ -66,7 +66,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, onReadMore, onTren
               
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '15px', paddingLeft: '5px' }}>
                 {narrative.trendIds.map(tId => {
-                  const trend = mockTrends.find(t => t.id === tId);
+                  const trend = trends.find(t => t.id === tId);
                   return trend ? (
                     <span key={tId} className="trend-chip" onClick={() => onTrendClick(tId)}>
                       <span className="trend-chip-text">{trend.name}</span>
