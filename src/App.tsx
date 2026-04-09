@@ -7,16 +7,19 @@ import { Trends } from './components/views/Trends';
 import { TrendDetail } from './components/views/TrendDetail';
 import { Archives } from './components/views/Archives';
 import { Claims } from './components/views/Claims';
+import { Videos } from './components/views/Videos';
+import { VideoDetail } from './components/views/VideoDetail';
 import { fetchWeeks, fetchNarrativesList, fetchTrendsList } from './services/api';
 import { adaptWeeks, adaptNarrativesList, adaptTrendsList, generateTrendAlerts } from './lib/adapters';
 import type { WeekData, Trend, TrendAlert, Narrative } from './types';
 
 export interface TabData {
   id: string;
-  type: 'week' | 'trends' | 'archives' | 'claims';
+  type: 'week' | 'trends' | 'archives' | 'claims' | 'videos' | 'video';
   weekId?: string;
   narrativeId?: string | null;
   trendId?: string | null;
+  videoId?: string | null;
   baseLabel: string;
   closable: boolean;
   parentId?: string;
@@ -73,6 +76,7 @@ function App() {
         setTabs([
           { id: firstTabId, type: 'week', weekId: currentWeek.id, baseLabel: `${currentWeek.weekName} (Current)`, closable: false },
           { id: 'claims', type: 'claims', baseLabel: 'The Classifieds', closable: false },
+          { id: 'videos', type: 'videos', baseLabel: 'Video Feed', closable: false },
           { id: 'trends', type: 'trends', baseLabel: 'Trends Analytics', closable: false },
           { id: 'archives', type: 'archives', baseLabel: 'Archives', closable: false },
         ]);
@@ -139,6 +143,27 @@ function App() {
       return prev;
     });
     setActiveTabId(narrativeTabId);
+  };
+
+  const handleVideoClick = (videoId: string | null) => {
+    if (!videoId) return;
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    const videoTabId = `video-${videoId}`;
+
+    setTabs(prev => {
+      if (!prev.find(t => t.id === videoTabId)) {
+        return [...prev, {
+          id: videoTabId,
+          type: 'video',
+          videoId: videoId,
+          baseLabel: `Video Insight`,
+          closable: true,
+          parentId: activeTab ? activeTab.id : undefined
+        }];
+      }
+      return prev;
+    });
+    setActiveTabId(videoTabId);
   };
 
   const handleTrendClick = (trendId: string) => {
@@ -218,6 +243,14 @@ function App() {
     const activeTab = tabs.find(t => t.id === activeTabId);
     if (!activeTab) return null;
 
+    if (activeTab.type === 'video' && activeTab.videoId) {
+      return <VideoDetail videoId={activeTab.videoId} onBack={handleBack} />;
+    }
+
+    if (activeTab.type === 'videos') {
+      return <Videos onVideoClick={handleVideoClick} />;
+    }
+
     if (activeTab.type === 'trends') {
       if (activeTab.trendId) {
         const trend = trends.find(t => t.id === activeTab.trendId);
@@ -241,10 +274,11 @@ function App() {
           ...week,
           narratives: getNarrativesForWeek(week.id),
         };
+
         if (activeTab.narrativeId) {
           const narrative = weekWithNarratives.narratives.find(n => n.id === activeTab.narrativeId);
           if (narrative) {
-            return <NarrativeDetail narrative={narrative} trends={trends} onBack={handleBack} onTrendClick={handleTrendClick} />;
+            return <NarrativeDetail narrative={narrative} trends={trends} onBack={handleBack} onTrendClick={handleTrendClick} onVideoClick={handleVideoClick} />;
           }
         }
         return <WeekReport week={weekWithNarratives} trends={trends} onReadMore={handleReadMore} onTrendClick={handleTrendClick} />;
