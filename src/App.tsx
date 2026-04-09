@@ -92,7 +92,7 @@ function App() {
         fetchTrendsList(),
       ]);
 
-      const adaptedWeeks = weeksRes ? adaptWeeks(weeksRes) : loadWeeksCache();
+      const adaptedWeeks = weeksRes ? adaptWeeks(weeksRes).reverse() : loadWeeksCache();
       const adaptedTrends = adaptTrendsList(trendsRes.trends);
       const alerts = generateTrendAlerts(trendsRes.trends);
 
@@ -113,7 +113,7 @@ function App() {
         // Initialize tabs now that we have data
         const firstTabId = `week-${currentWeek.id}`;
         setTabs([
-          { id: firstTabId, type: 'week', weekId: currentWeek.id, baseLabel: `${currentWeek.weekName} (Current)`, closable: false },
+          { id: firstTabId, type: 'week', weekId: currentWeek.id, baseLabel: 'Latest News', closable: false },
           { id: 'claims', type: 'claims', baseLabel: 'The Classifieds', closable: false },
           { id: 'trends', type: 'trends', baseLabel: 'Trends Analytics', closable: false },
           { id: 'archives', type: 'archives', baseLabel: 'Archives', closable: false },
