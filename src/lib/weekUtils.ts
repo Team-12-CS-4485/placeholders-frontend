@@ -5,7 +5,7 @@
  * │  UPDATE THIS when you know the actual recording epoch.  │
  * └─────────────────────────────────────────────────────────┘
  */
-export const WEEK_1_START = new Date('2026-01-13');
+export const WEEK_1_START = new Date('2026-03-02');
 
 export function weekToDateRange(weekId: string): string {
   const match = weekId.match(/^week(\d+)$/i);
