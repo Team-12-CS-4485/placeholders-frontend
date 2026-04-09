@@ -56,6 +56,7 @@ export interface WeekData {
   id: string;
   weekName: string;
   dateRange: string;
+  totalViews: number;
   summary: WeeklySummary;
   narratives: Narrative[];
 }

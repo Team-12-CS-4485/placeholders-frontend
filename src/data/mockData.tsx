@@ -240,6 +240,7 @@ export const mockWeeks: WeekData[] = [
     id: '2026-w3',
     weekName: '2026 Week 3',
     dateRange: 'Jan 15 - Jan 21, 2026',
+    totalViews: 0,
     summary: {
       dateRange: 'Jan 15 - Jan 21, 2026',
       headline: 'Deepfake Scams and Quantum Panics Crash the Markets',
@@ -396,6 +397,7 @@ export const mockWeeks: WeekData[] = [
     id: '2026-w2',
     weekName: '2026 Week 2',
     dateRange: 'Jan 8 - Jan 14, 2026',
+    totalViews: 0,
     summary: {
       dateRange: 'Jan 8 - Jan 14, 2026',
       headline: 'AI Disruption and Market Fears Dominate Discourse',
@@ -473,6 +475,7 @@ export const mockWeeks: WeekData[] = [
     id: '2026-w1',
     weekName: '2026 Week 1',
     dateRange: 'Jan 1 - Jan 7, 2026',
+    totalViews: 0,
     summary: {
       dateRange: 'Jan 1 - Jan 7, 2026',
       headline: 'New Year, New Tech Speculations',
@@ -550,6 +553,7 @@ export const mockWeeks: WeekData[] = [
     id: '2025-w52',
     weekName: '2025 Week 52',
     dateRange: 'Dec 25 - Dec 31, 2025',
+    totalViews: 0,
     summary: {
       dateRange: 'Dec 25 - Dec 31, 2025',
       headline: 'End of Year CRISPR Crazes and AI Optimism',
@@ -627,6 +631,7 @@ export const mockWeeks: WeekData[] = [
     id: '2025-w51',
     weekName: '2025 Week 51',
     dateRange: 'Dec 18 - Dec 24, 2025',
+    totalViews: 0,
     summary: {
       dateRange: 'Dec 18 - Dec 24, 2025',
       headline: 'Holiday Scams and Crypto-Mortgage Defaults',
@@ -678,6 +683,7 @@ export const mockWeeks: WeekData[] = [
     id: '2025-w50',
     weekName: '2025 Week 50',
     dateRange: 'Dec 11 - Dec 17, 2025',
+    totalViews: 0,
     summary: {
       dateRange: 'Dec 11 - Dec 17, 2025',
       headline: 'Neuro-Stimulation Gaming Tech Hits the Market',

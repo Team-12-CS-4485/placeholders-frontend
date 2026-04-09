@@ -11,6 +11,44 @@ import { fetchWeeks, fetchNarrativesList, fetchTrendsList } from './services/api
 import { adaptWeeks, adaptNarrativesList, adaptTrendsList, generateTrendAlerts } from './lib/adapters';
 import type { WeekData, Trend, TrendAlert, Narrative } from './types';
 
+const WEEKS_CACHE_KEY = 'cap-weeks-v2';
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+interface WeeksCache {
+  weeks: WeekData[];
+  savedAt: number; // Date.now() timestamp
+}
+
+function readWeeksCache(): WeeksCache | null {
+  try {
+    const raw = localStorage.getItem(WEEKS_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as WeeksCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function loadWeeksCache(): WeekData[] {
+  return readWeeksCache()?.weeks ?? [];
+}
+
+function isCacheFresh(): boolean {
+  const cache = readWeeksCache();
+  return cache !== null && Date.now() - cache.savedAt < CACHE_TTL_MS;
+}
+
+function saveWeeksCache(weeks: WeekData[]): void {
+  try {
+    const payload: WeeksCache = {
+      weeks: weeks.map(w => ({ ...w, narratives: [] })),
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(WEEKS_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore — storage unavailable in private browsing
+  }
+}
+
 export interface TabData {
   id: string;
   type: 'week' | 'trends' | 'archives' | 'claims';
@@ -23,7 +61,7 @@ export interface TabData {
 }
 
 function App() {
-  const [weeks, setWeeks] = useState<WeekData[]>([]);
+  const [weeks, setWeeks] = useState<WeekData[]>(loadWeeksCache);
   const [trends, setTrends] = useState<Trend[]>([]);
   const [trendAlerts, setTrendAlerts] = useState<TrendAlert[]>([]);
   const [narrativesByWeek, setNarrativesByWeek] = useState<Record<string, Narrative[]>>({});
@@ -49,12 +87,16 @@ function App() {
   // Initial data load
   useEffect(() => {
     async function init() {
-      const [weeksRes, trendsRes] = await Promise.all([fetchWeeks(), fetchTrendsList()]);
+      const [weeksRes, trendsRes] = await Promise.all([
+        isCacheFresh() ? Promise.resolve(null) : fetchWeeks(),
+        fetchTrendsList(),
+      ]);
 
-      const adaptedWeeks = adaptWeeks(weeksRes);
+      const adaptedWeeks = weeksRes ? adaptWeeks(weeksRes) : loadWeeksCache();
       const adaptedTrends = adaptTrendsList(trendsRes.trends);
       const alerts = generateTrendAlerts(trendsRes.trends);
 
+      if (weeksRes) saveWeeksCache(adaptedWeeks);
       setWeeks(adaptedWeeks);
       setTrends(adaptedTrends);
       setTrendAlerts(alerts);

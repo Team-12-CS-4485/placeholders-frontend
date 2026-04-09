@@ -1,3 +1,4 @@
+import { weekToDateRange } from './weekUtils';
 import type {
   BackendWeeksResponse,
   BackendNarrativeListItem,
@@ -11,17 +12,21 @@ import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk } from 
 // ---- Weeks ----
 
 export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
-  return res.weeks.map(w => ({
-    id: w.week,
-    weekName: formatWeekName(w.week),
-    dateRange: '',
-    summary: {
-      dateRange: '',
-      headline: `${w.breaking_count} Breaking Stories | ${capitalize(w.dominant_sentiment)} Sentiment`,
-      content: `${w.total_videos} videos analyzed across ${w.active_clusters} active clusters this week.`,
-    },
-    narratives: [],
-  }));
+  return res.weeks.map(w => {
+    const dateRange = weekToDateRange(w.week);
+    return {
+      id: w.week,
+      weekName: formatWeekName(w.week),
+      dateRange,
+      totalViews: w.total_views,
+      summary: {
+        dateRange,
+        headline: `${w.breaking_count} Breaking Stories | ${capitalize(w.dominant_sentiment)} Sentiment`,
+        content: `${w.total_videos} videos analyzed across ${w.active_clusters} active clusters this week.`,
+      },
+      narratives: [],
+    };
+  });
 }
 
 // ---- Narratives (list) ----
