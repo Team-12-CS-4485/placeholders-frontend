@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WeekData } from '../../types';
+import { formatViews } from '../../lib/weekUtils';
 
 interface ArchivesProps {
   weeks: WeekData[];
@@ -23,8 +24,11 @@ export const Archives: React.FC<ArchivesProps> = ({ weeks, onOpenWeek }) => {
                 {/* Meta Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span className="classified-meta" style={{ margin: 0 }}>{week.dateRange || week.weekName}</span>
-                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)' }}>
-                    {week.narratives.length > 0 ? `${week.narratives.length} Narratives` : 'View Report'}
+                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--ink-faded)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {week.narratives.length > 0
+                      ? `${week.narratives.length} Narratives`
+                      : <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>View Report</span>}
+                    {week.totalViews > 0 && <span>· {formatViews(week.totalViews)}</span>}
                   </span>
                 </div>
 

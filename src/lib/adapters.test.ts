@@ -177,6 +177,17 @@ describe('adaptWeeks', () => {
     const result = adaptWeeks(WEEKS_RESPONSE);
     expect(result).toHaveLength(1);
   });
+
+  it('computes a non-empty dateRange from the week identifier', () => {
+    const result = adaptWeeks(WEEKS_RESPONSE);
+    expect(result[0].dateRange).not.toBe('');
+    expect(result[0].dateRange).toContain('2026');
+  });
+
+  it('maps total_views to totalViews', () => {
+    const result = adaptWeeks(WEEKS_RESPONSE);
+    expect(result[0].totalViews).toBe(2737594);
+  });
 });
 
 // ── adaptNarrativesList ───────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import { weekToDateRange } from './weekUtils';
 import type {
   BackendWeeksResponse,
   BackendNarrativeListItem,
@@ -13,17 +14,21 @@ import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video,
 // ---- Weeks ----
 
 export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
-  return res.weeks.map(w => ({
-    id: w.week,
-    weekName: formatWeekName(w.week),
-    dateRange: '',
-    summary: {
-      dateRange: '',
-      headline: `${w.breaking_count} Breaking Stories | ${capitalize(w.dominant_sentiment)} Sentiment`,
-      content: `${w.total_videos} videos analyzed across ${w.active_clusters} active clusters this week.`,
-    },
-    narratives: [],
-  }));
+  return res.weeks.map(w => {
+    const dateRange = weekToDateRange(w.week);
+    return {
+      id: w.week,
+      weekName: formatWeekName(w.week),
+      dateRange,
+      totalViews: w.total_views,
+      summary: {
+        dateRange,
+        headline: `${w.breaking_count} Breaking Stories | ${capitalize(w.dominant_sentiment)} Sentiment`,
+        content: `${w.total_videos} videos analyzed across ${w.active_clusters} active clusters this week.`,
+      },
+      narratives: [],
+    };
+  });
 }
 
 // ---- Narratives (list) ----
@@ -91,17 +96,17 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
 
   c.debated.forEach((item, i) => {
     const name = item.channel || 'Multiple Sources';
-    
+
     // Check for transcript_excerpt first (from OpenAPI), fallback to text/framing (from mock)
     const quote = (
-      item.perspectives[0]?.transcript_excerpt || 
-      item.perspectives[0]?.text || 
-      item.perspectives[0]?.framing || 
+      item.perspectives[0]?.transcript_excerpt ||
+      item.perspectives[0]?.text ||
+      item.perspectives[0]?.framing ||
       ''
     );
-    
+
     const videoId = item.perspectives[0]?.video_id || null;
-    
+
     claims.push({
       id: `${narrativeId}-deb-${i}`,
       creatorName: name,

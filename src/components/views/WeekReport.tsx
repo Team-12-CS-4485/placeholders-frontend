@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WeekData, Trend } from '../../types';
+import { formatViews } from '../../lib/weekUtils';
 
 interface WeekReportProps {
   week: WeekData;
@@ -44,6 +45,11 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
         <p style={{ fontSize: '1.1rem' }}>
           {week.summary.content}
         </p>
+        {week.totalViews > 0 && (
+          <p className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)', marginTop: '4px' }}>
+            {formatViews(week.totalViews)} this week
+          </p>
+        )}
       </div>
 
       {/* Newspaper Grid of Narratives */}
