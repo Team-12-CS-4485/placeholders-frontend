@@ -258,10 +258,11 @@ describe('adaptClaims', () => {
     expect(result).toHaveLength(3);
   });
 
-  it('maps consensus video_ids[0] to a YouTube watch URL', () => {
+  it('maps consensus video_ids[0] to a YouTube watch URL and exact videoId', () => {
     const result = adaptClaims(CLAIMS_RESPONSE, '9');
     const c = result.find(r => r.id.includes('con'));
     expect(c?.videoUrl).toBe('https://www.youtube.com/watch?v=abc123');
+    expect(c?.videoId).toBe('abc123');
   });
 
   it('uses # when consensus video_ids is empty', () => {
@@ -275,12 +276,14 @@ describe('adaptClaims', () => {
     const result = adaptClaims(noVideo, '9');
     const c = result.find(r => r.id.includes('con'));
     expect(c?.videoUrl).toBe('#');
+    expect(c?.videoId).toBeNull();
   });
 
-  it('maps unique video_id to a YouTube watch URL', () => {
+  it('maps unique video_id to a YouTube watch URL and exact videoId', () => {
     const result = adaptClaims(CLAIMS_RESPONSE, '9');
     const u = result.find(r => r.id.includes('unq'));
     expect(u?.videoUrl).toBe('https://www.youtube.com/watch?v=ghi789');
+    expect(u?.videoId).toBe('ghi789');
   });
 
   it('derives creatorInitials from the first character of the creator name', () => {

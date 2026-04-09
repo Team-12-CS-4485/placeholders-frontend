@@ -1,4 +1,7 @@
+// src/types/index.ts
 import React from 'react';
+
+// Removed TranscriptLine & CorroboratingSource as they were mock-only structures
 
 export interface Claim {
   id: string;
@@ -6,8 +9,30 @@ export interface Claim {
   creatorInitials: string;
   riskScore: number;
   extractedClaim: React.ReactNode;
-  originalQuote: React.ReactNode;
+  originalQuote: string;
   videoUrl: string;
+  videoId: string | null; // Added to enable clean routing to video details
+}
+
+export interface Video {
+  id: string;
+  channel: string;
+  title: string;
+  publishedAt: string;
+  viewCount: number;
+  thumbnailUrl: string;
+  sentiment: string;
+  clusterLabel: string;
+}
+
+export interface VideoDetailData extends Video {
+  likeCount: number;
+  commentCount: number;
+  description: string;
+  transcript: string;
+  topComments: { author: string; text: string; likes: number }[];
+  keyClaims: string[];
+  topics: string[];
 }
 
 export interface Narrative {

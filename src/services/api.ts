@@ -83,6 +83,11 @@ export interface BackendConsensusClaim {
 }
 
 export interface BackendDebatedClaimPerspective {
+  channel?: string;
+  sentiment?: string;
+  video_id?: string;
+  video_title?: string;
+  transcript_excerpt?: string;
   text?: string;
   framing?: string;
 }
@@ -155,6 +160,47 @@ export interface BackendTrendDetail extends BackendTrendListItem {
   thumbnail_tone_breakdown: Record<string, number>;
 }
 
+export interface BackendVideoItem {
+  video_id: string;
+  channel: string;
+  title: string;
+  published_at: string;
+  view_count: number;
+  like_count: number;
+  comment_count: number;
+  week?: string | null;
+  topics?: string[] | null;
+  category?: string | null;
+  sentiment?: string | null;
+  key_claims?: string[] | null;
+  is_breaking?: boolean | null;
+  cluster_id?: number | null;
+  cluster_label?: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_tone?: string | null;
+  thumbnail_clickbait_score?: number | null;
+  thumbnail_insight?: string | null;
+  thumbnail_brand_consistent?: boolean | null;
+}
+
+export interface BackendVideoListResponse {
+  items: BackendVideoItem[];
+  total_returned: number;
+  next_cursor?: string | null;
+}
+
+export interface BackendVideoTopComment {
+  author: string;
+  text: string;
+  likes: number;
+}
+
+export interface BackendVideoDetailItem extends BackendVideoItem {
+  description: string;
+  transcript: string;
+  top_comments: BackendVideoTopComment[];
+}
+
 // --- Fetch functions ---
 
 export function fetchWeeks(): Promise<BackendWeeksResponse> {
@@ -183,4 +229,14 @@ export function fetchTrendDetail(clusterId: number): Promise<BackendTrendDetail>
 
 export function fetchAllNarratives(): Promise<BackendNarrativeListResponse> {
   return get('/api/narratives');
+}
+
+export function fetchVideosList(limit = 20, cursor?: string): Promise<BackendVideoListResponse> {
+  let url = `/api/videos?limit=${limit}`;
+  if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+  return get(url);
+}
+
+export function fetchVideoDetail(videoId: string): Promise<BackendVideoDetailItem> {
+  return get(`/api/videos/by-id?video_id=${encodeURIComponent(videoId)}`);
 }
