@@ -8,9 +8,10 @@ interface NarrativeDetailProps {
   trends: Trend[];
   onBack: () => void;
   onTrendClick: (trendId: string) => void;
+  onVideoClick: (claimId: string) => void;
 }
 
-export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, trends, onBack, onTrendClick }) => {
+export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, trends, onBack, onTrendClick, onVideoClick }) => {
   const [fullNarrative, setFullNarrative] = useState<Narrative | null>(null);
 
   useEffect(() => {
@@ -84,8 +85,8 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, tre
               <div key={claim.id} className="claim-card">
                 <div className="claim-header">
                   <div className="profile-pic">{claim.creatorInitials}</div>
-
-                  <a
+                  
+                  <a 
                     href={`https://youtube.com/${youtubeHandle}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -100,12 +101,22 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({ narrative, tre
                   </span>
                 </div>
                 <h4 style={{ fontSize: '1.1rem', marginBottom: '10px' }}>"{claim.extractedClaim}"</h4>
+                
                 {claim.originalQuote && (
                   <p style={{ fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--ink-faded)', marginBottom: '10px' }}>
                     Transcript: {claim.originalQuote}
                   </p>
                 )}
-                <a href={claim.videoUrl} className="font-mono clickable-title" style={{ fontSize: '0.8rem', color: 'var(--ink-heavy)', textDecoration: 'none' }}>[View Source Video]</a>
+                
+                {claim.videoId && (
+                  <button 
+                    onClick={() => onVideoClick(claim.videoId!)} 
+                    className="font-mono clickable-title" 
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--ink-heavy)', textDecoration: 'none', padding: 0 }}
+                  >
+                    [View Source Video]
+                  </button>
+                )}
               </div>
             );
           })}

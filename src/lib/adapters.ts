@@ -6,8 +6,10 @@ import type {
   BackendNarrativeClaims,
   BackendTrendListItem,
   BackendTrendDetail,
+  BackendVideoListResponse,
+  BackendVideoDetailItem,
 } from '../services/api';
-import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk } from '../types';
+import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video, VideoDetailData } from '../types';
 
 // ---- Weeks ----
 
@@ -88,12 +90,23 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
       extractedClaim: item.claim,
       originalQuote: item.transcript_excerpt,
       videoUrl: item.video_ids[0] ? `https://www.youtube.com/watch?v=${item.video_ids[0]}` : '#',
+      videoId: item.video_ids[0] || null,
     });
   });
 
   c.debated.forEach((item, i) => {
     const name = item.channel || 'Multiple Sources';
-    const quote = (item.perspectives[0]?.text || item.perspectives[0]?.framing || '');
+
+    // Check for transcript_excerpt first (from OpenAPI), fallback to text/framing (from mock)
+    const quote = (
+      item.perspectives[0]?.transcript_excerpt ||
+      item.perspectives[0]?.text ||
+      item.perspectives[0]?.framing ||
+      ''
+    );
+
+    const videoId = item.perspectives[0]?.video_id || null;
+
     claims.push({
       id: `${narrativeId}-deb-${i}`,
       creatorName: name,
@@ -101,7 +114,8 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
       riskScore: item.risk_score,
       extractedClaim: item.claim,
       originalQuote: quote,
-      videoUrl: '#',
+      videoUrl: videoId ? `https://www.youtube.com/watch?v=${videoId}` : '#',
+      videoId,
     });
   });
 
@@ -114,10 +128,39 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
       extractedClaim: item.claim,
       originalQuote: item.transcript_excerpt,
       videoUrl: item.video_id ? `https://www.youtube.com/watch?v=${item.video_id}` : '#',
+      videoId: item.video_id || null,
     });
   });
 
   return claims;
+}
+
+// ---- Videos ----
+
+export function adaptVideoList(res: BackendVideoListResponse): Video[] {
+  return res.items.map(item => ({
+    id: item.video_id,
+    channel: item.channel,
+    title: item.title,
+    publishedAt: item.published_at,
+    viewCount: item.view_count,
+    thumbnailUrl: item.thumbnail_url || '',
+    sentiment: item.sentiment || 'neutral',
+    clusterLabel: item.cluster_label || 'Uncategorized',
+  }));
+}
+
+export function adaptVideoDetail(item: BackendVideoDetailItem): VideoDetailData {
+  return {
+    ...adaptVideoList({ items: [item], total_returned: 1 })[0],
+    likeCount: item.like_count,
+    commentCount: item.comment_count,
+    description: item.description,
+    transcript: item.transcript,
+    topComments: item.top_comments || [],
+    keyClaims: item.key_claims || [],
+    topics: item.topics || [],
+  };
 }
 
 // ---- Trends (list) ----
