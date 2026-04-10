@@ -8,8 +8,47 @@ import type {
   BackendTrendDetail,
   BackendVideoListResponse,
   BackendVideoDetailItem,
+  BackendArticleListItem,
 } from '../services/api';
 import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video, VideoDetailData } from '../types';
+
+// ---- Helpers ----
+
+export function formatWeekName(week: string): string {
+  const match = week.match(/^week(\d+)$/i);
+  return match ? `Week ${match[1]}` : week;
+}
+
+export function parseWeekNumber(weekId: string): number | undefined {
+  const m = weekId.match(/(\d+)$/);
+  return m ? parseInt(m[1], 10) : undefined;
+}
+
+function capitalize(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/[\s_-]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(p => p[0].toUpperCase())
+    .join('');
+}
+
+function normalizeRiskLevel(level: string): 'HIGH' | 'MED' | 'LOW' {
+  const upper = level.toUpperCase();
+  if (upper === 'HIGH') return 'HIGH';
+  if (upper === 'MEDIUM' || upper === 'MED') return 'MED';
+  return 'LOW';
+}
+
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen).replace(/\s+\S*$/, '') + '…';
+}
 
 // ---- Weeks ----
 
@@ -33,19 +72,39 @@ export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
 
 // ---- Narratives (list) ----
 
-export function adaptNarrativesList(items: BackendNarrativeListItem[], weekId: string): Narrative[] {
-  return items.map((item, index) => ({
-    id: item.cluster_id.toString(),
-    weekId,
-    category: item.category,
-    headline: item.narrative_headline || item.label,
-    subheadline: item.label,
-    summary: item.top_topics.join(' · '),
-    fullText: [item.top_topics.join(' · ')],
-    pageNumber: index + 1,
-    claims: [],
-    trendIds: [item.cluster_id.toString()],
-  }));
+/**
+ * Adapt narrative list items, optionally merging article metadata so that
+ * overview and articleId are available in the week report view without
+ * requiring a separate per-narrative article fetch.
+ *
+ * articlesByCluster: cluster_id → BackendArticleListItem
+ */
+export function adaptNarrativesList(
+  items: BackendNarrativeListItem[],
+  weekId: string,
+  articlesByCluster?: Map<number, BackendArticleListItem>,
+): Narrative[] {
+  return items.map((item, index) => {
+    const article = articlesByCluster?.get(item.cluster_id);
+    return {
+      id: item.cluster_id.toString(),
+      weekId,
+      category: item.category,
+      // Prefer the article title if available, fall back to narrative_headline → label
+      headline: article?.title ?? item.narrative_headline ?? item.label,
+      subheadline: item.label,
+      // overview is the article's lede paragraph; summary is a short teaser
+      overview: article?.overview,
+      articleId: article?.article_id,
+      summary: article?.overview
+        ? truncate(article.overview, 200)
+        : item.top_topics.join(' · '),
+      fullText: item.top_topics.length ? [item.top_topics.join(' · ')] : [],
+      pageNumber: index + 1,
+      claims: [],
+      trendIds: [item.cluster_id.toString()],
+    };
+  });
 }
 
 // ---- Narrative (detail) ----
@@ -53,7 +112,7 @@ export function adaptNarrativesList(items: BackendNarrativeListItem[], weekId: s
 export function adaptNarrativeDetail(
   detail: BackendNarrativeDetail,
   claims: BackendNarrativeClaims,
-  weekId: string
+  weekId: string,
 ): Narrative {
   const fullText: string[] = [];
   if (detail.narrative_summary) fullText.push(detail.narrative_summary);
@@ -64,9 +123,9 @@ export function adaptNarrativeDetail(
     id: detail.cluster_id.toString(),
     weekId,
     category: detail.category,
-    headline: detail.narrative_headline || detail.label,
+    headline: detail.narrative_headline ?? detail.label,
     subheadline: detail.label,
-    summary: detail.narrative_summary || detail.top_topics.join(' · '),
+    summary: detail.narrative_summary ?? detail.top_topics.join(' · '),
     fullText,
     pageNumber: 1,
     claims: adaptClaims(claims, detail.cluster_id.toString()),
@@ -97,7 +156,6 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
   c.debated.forEach((item, i) => {
     const name = item.channel || 'Multiple Sources';
 
-    // Check for transcript_excerpt first (from OpenAPI), fallback to text/framing (from mock)
     const quote = (
       item.perspectives[0]?.transcript_excerpt ||
       item.perspectives[0]?.text ||
@@ -190,7 +248,6 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
     value: w.view_count,
   }));
 
-  // Fallback so MiniGraph always has at least 2 points
   const safeEngagementData = engagementData.length >= 2
     ? engagementData
     : [{ date: 'start', value: 0 }, { date: 'now', value: detail.heat_score }];
@@ -237,33 +294,4 @@ export function generateTrendAlerts(items: BackendTrendListItem[]): TrendAlert[]
       headline: t.label,
       description: `${t.breaking_count} breaking stories · Heat score: ${t.heat_score.toFixed(0)}`,
     }));
-}
-
-// ---- Helpers ----
-
-function formatWeekName(week: string): string {
-  // "week1" → "Week 1", "week12" → "Week 12"
-  const match = week.match(/^week(\d+)$/i);
-  return match ? `Week ${match[1]}` : week;
-}
-
-function capitalize(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/[\s_-]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(p => p[0].toUpperCase())
-    .join('');
-}
-
-function normalizeRiskLevel(level: string): 'HIGH' | 'MED' | 'LOW' {
-  const upper = level.toUpperCase();
-  if (upper === 'HIGH') return 'HIGH';
-  if (upper === 'MEDIUM' || upper === 'MED') return 'MED';
-  return 'LOW';
 }

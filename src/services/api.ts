@@ -6,6 +6,20 @@ async function get<T>(path: string): Promise<T> {
   return res.json();
 }
 
+// ── Query builder ────────────────────────────────────────────────────────────
+function withQuery(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+): string {
+  if (!params) return path;
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return query ? `${path}?${query}` : path;
+}
+
 // --- Response type shapes from backend ---
 
 export interface BackendWeekSummary {
@@ -201,6 +215,26 @@ export interface BackendVideoDetailItem extends BackendVideoItem {
   top_comments: BackendVideoTopComment[];
 }
 
+// ── Articles ─────────────────────────────────────────────────────────────────
+
+export interface BackendArticleListItem {
+  article_id: string;
+  cluster_id: number;
+  week_number: number;
+  title: string;
+  overview: string;
+  created_at: string;
+}
+
+export interface BackendArticleListResponse {
+  articles: BackendArticleListItem[];
+  total: number;
+}
+
+export interface BackendArticleDetail extends BackendArticleListItem {
+  body: string;
+}
+
 // --- Fetch functions ---
 
 export function fetchWeeks(): Promise<BackendWeeksResponse> {
@@ -239,4 +273,15 @@ export function fetchVideosList(limit = 20, cursor?: string): Promise<BackendVid
 
 export function fetchVideoDetail(videoId: string): Promise<BackendVideoDetailItem> {
   return get(`/api/videos/by-id?video_id=${encodeURIComponent(videoId)}`);
+}
+
+// Articles list — supports filtering by cluster_id, week, limit
+export function fetchArticles(
+  params: Record<string, string | number | undefined> = {},
+): Promise<BackendArticleListResponse> {
+  return get(withQuery('/api/articles', params));
+}
+
+export function fetchArticleById(articleId: string): Promise<BackendArticleDetail> {
+  return get(`/api/articles/${encodeURIComponent(articleId)}`);
 }

@@ -1,7 +1,4 @@
-// src/types/index.ts
 import React from 'react';
-
-// Removed TranscriptLine & CorroboratingSource as they were mock-only structures
 
 export interface Claim {
   id: string;
@@ -11,7 +8,7 @@ export interface Claim {
   extractedClaim: React.ReactNode;
   originalQuote: string;
   videoUrl: string;
-  videoId: string | null; // Added to enable clean routing to video details
+  videoId: string | null;
 }
 
 export interface Video {
@@ -41,8 +38,20 @@ export interface Narrative {
   category: string;
   headline: string;
   subheadline: React.ReactNode;
+  /** Short teaser shown on the week report card */
   summary: React.ReactNode;
+  /** Full body paragraphs (fallback when no article body available) */
   fullText: React.ReactNode[];
+  /**
+   * Article overview from GET /api/articles — a full lede paragraph.
+   * Populated when articles are fetched alongside narratives.
+   */
+  overview?: string;
+  /**
+   * article_id returned by the articles list endpoint.
+   * Stored here so NarrativeDetail can skip the list call and go straight to detail.
+   */
+  articleId?: string;
   pageNumber: number;
   claims: Claim[];
   trendIds: string[];
