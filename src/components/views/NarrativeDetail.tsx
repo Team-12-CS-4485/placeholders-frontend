@@ -39,19 +39,21 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
   //  3. If that returns nothing, retry without the week filter (handles mis-matched
   //     week numbers between the narratives list and the articles table).
   useEffect(() => {
-    let cancelled = false;
-    setArticleLoading(true);
-    setArticle(null);
+  let cancelled = false;
 
-    async function load() {
-      // Fast path: articleId was merged in during the week-narratives load
+  async function load() {
+    if (!cancelled) {
+      setArticleLoading(true);
+      setArticle(null);
+    }
+
+    try {
       if (narrative.articleId) {
         const detail = await fetchArticleById(narrative.articleId);
         if (!cancelled) setArticle(detail);
         return;
       }
 
-      // Slow path: search by cluster + week
       const params: Parameters<typeof fetchArticles>[0] = {
         cluster_id: clusterId,
         limit: 1,
@@ -60,24 +62,25 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
 
       let res = await fetchArticles(params);
 
-      // Fallback: drop the week filter — maybe week_number differs in DynamoDB
       if (res.articles.length === 0 && weekNumber !== undefined) {
         res = await fetchArticles({ cluster_id: clusterId, limit: 1 });
       }
 
       const listItem = res.articles[0];
-      if (!listItem) return; // No article generated yet
+      if (!listItem) return;
 
       const detail = await fetchArticleById(listItem.article_id);
       if (!cancelled) setArticle(detail);
+    } catch {
+      // optional: handle error
+    } finally {
+      if (!cancelled) setArticleLoading(false);
     }
+  }
 
-    load()
-      .catch(() => { /* article stays null; fallback text shown */ })
-      .finally(() => { if (!cancelled) setArticleLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [clusterId, weekNumber, narrative.articleId]);
+  load();
+  return () => { cancelled = true; };
+}, [clusterId, weekNumber, narrative.articleId]);
 
   // ── Claims fetch (parallel, independent) ───────────────────────────────────
   useEffect(() => {
