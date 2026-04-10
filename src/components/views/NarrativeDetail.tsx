@@ -84,18 +84,26 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
 
   // ── Claims fetch (parallel, independent) ───────────────────────────────────
   useEffect(() => {
-    let cancelled = false;
-    setClaimsLoading(true);
+  let cancelled = false;
 
-    fetchNarrativeClaims(clusterId)
-      .then(res => {
-        if (!cancelled) setClaims(adaptClaims(res, narrative.id));
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setClaimsLoading(false); });
+  async function loadClaims() {
+    if (!cancelled) setClaimsLoading(true);
 
-    return () => { cancelled = true; };
-  }, [clusterId, narrative.id]);
+    try {
+      const res = await fetchNarrativeClaims(clusterId);
+      if (!cancelled) {
+        setClaims(adaptClaims(res, narrative.id));
+      }
+    } catch {
+      // optional
+    } finally {
+      if (!cancelled) setClaimsLoading(false);
+    }
+  }
+
+  loadClaims();
+  return () => { cancelled = true; };
+}, [clusterId, narrative.id]);
 
   const getRiskClass = (score: number) => {
     if (score >= 0.8) return 'risk-high';
