@@ -9,16 +9,29 @@ import { Archives } from './components/views/Archives';
 import { Claims } from './components/views/Claims';
 import { Videos } from './components/views/Videos';
 import { VideoDetail } from './components/views/VideoDetail';
-import { fetchWeeks, fetchNarrativesList, fetchTrendsList } from './services/api';
-import { adaptWeeks, adaptNarrativesList, adaptTrendsList, generateTrendAlerts } from './lib/adapters';
+import {
+  fetchWeeks,
+  fetchNarrativesList,
+  fetchTrendsList,
+  fetchArticles,
+} from './services/api';
+import {
+  adaptWeeks,
+  adaptNarrativesList,
+  adaptTrendsList,
+  adaptTrendDetail as _adaptTrendDetail,
+  generateTrendAlerts,
+  parseWeekNumber,
+} from './lib/adapters';
 import type { WeekData, Trend, TrendAlert, Narrative } from './types';
+import type { BackendArticleListItem } from './services/api';
 
 const WEEKS_CACHE_KEY = 'cap-weeks-v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
 interface WeeksCache {
   weeks: WeekData[];
-  savedAt: number; // Date.now() timestamp
+  savedAt: number;
 }
 
 function readWeeksCache(): WeeksCache | null {
@@ -73,21 +86,44 @@ function App() {
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
 
-  // Helper: get narratives for a week (from cache)
-  const getNarrativesForWeek = (weekId: string): Narrative[] => narrativesByWeek[weekId] ?? [];
+  const getNarrativesForWeek = (weekId: string): Narrative[] =>
+    narrativesByWeek[weekId] ?? [];
 
-  // Fetch narratives for a week and cache them
+  /**
+   * Fetches both narratives and articles for a week in parallel so that
+   * article overviews and titles are available in the week report view.
+   */
   async function loadNarrativesForWeek(weekId: string): Promise<Narrative[]> {
     if (narrativesByWeek[weekId]) return narrativesByWeek[weekId];
-    const res = await fetchNarrativesList(weekId);
-    const narratives = adaptNarrativesList(res.narratives, weekId);
+
+    const weekNumber = parseWeekNumber(weekId);
+
+    const [narrativesRes, articlesRes] = await Promise.all([
+      fetchNarrativesList(weekId),
+      weekNumber !== undefined
+        ? fetchArticles({ week: weekNumber, limit: 200 })
+        : Promise.resolve({ articles: [] as BackendArticleListItem[], total: 0 }),
+    ]);
+
+    // Build a fast cluster_id → article lookup
+    const articlesByCluster = new Map<number, BackendArticleListItem>(
+      articlesRes.articles.map(a => [a.cluster_id, a]),
+    );
+
+    const narratives = adaptNarrativesList(
+      narrativesRes.narratives,
+      weekId,
+      articlesByCluster,
+    );
+
     setNarrativesByWeek(prev => ({ ...prev, [weekId]: narratives }));
-    // Also update the week's narratives array
-    setWeeks(prev => prev.map(w => w.id === weekId ? { ...w, narratives } : w));
+    setWeeks(prev =>
+      prev.map(w => (w.id === weekId ? { ...w, narratives } : w)),
+    );
     return narratives;
   }
 
-  // Initial data load
+  // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
       const [weeksRes, trendsRes] = await Promise.all([
@@ -95,7 +131,9 @@ function App() {
         fetchTrendsList(),
       ]);
 
-      const adaptedWeeks = weeksRes ? adaptWeeks(weeksRes).reverse() : loadWeeksCache();
+      const adaptedWeeks = weeksRes
+        ? adaptWeeks(weeksRes).reverse()
+        : loadWeeksCache();
       const adaptedTrends = adaptTrendsList(trendsRes.trends);
       const alerts = generateTrendAlerts(trendsRes.trends);
 
@@ -105,35 +143,42 @@ function App() {
       setTrends(adaptedTrends);
       setTrendAlerts(alerts);
 
-      // Load narratives for the current (first) week
       if (adaptedWeeks.length > 0) {
         const currentWeek = adaptedWeeks[0];
-        const narrativesRes = await fetchNarrativesList(currentWeek.id);
-        const narratives = adaptNarrativesList(narrativesRes.narratives, currentWeek.id);
+        const narratives = await loadNarrativesForWeek(currentWeek.id);
 
-        setNarrativesByWeek({ [currentWeek.id]: narratives });
-        setWeeks(prev => prev.map(w => w.id === currentWeek.id ? { ...w, narratives } : w));
-
-        // Initialize tabs now that we have data
         const firstTabId = `week-${currentWeek.id}`;
         setTabs([
-          { id: firstTabId, type: 'week', weekId: currentWeek.id, baseLabel: 'Latest News', closable: false },
+          {
+            id: firstTabId,
+            type: 'week',
+            weekId: currentWeek.id,
+            baseLabel: 'Latest News',
+            closable: false,
+          },
           { id: 'claims', type: 'claims', baseLabel: 'The Classifieds', closable: false },
           { id: 'videos', type: 'videos', baseLabel: 'Video Feed', closable: false },
           { id: 'trends', type: 'trends', baseLabel: 'Trends Analytics', closable: false },
           { id: 'archives', type: 'archives', baseLabel: 'Archives', closable: false },
         ]);
         setActiveTabId(firstTabId);
+
+        void narratives;
       }
 
       setIsLoading(false);
     }
 
     init().catch(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Tab management ──────────────────────────────────────────────────────────
   const handleCloseTab = (tabId: string) => {
-    const tabsToRemove = new Set([tabId, ...tabs.filter(t => t.parentId === tabId).map(t => t.id)]);
+    const tabsToRemove = new Set([
+      tabId,
+      ...tabs.filter(t => t.parentId === tabId).map(t => t.id),
+    ]);
     const newTabs = tabs.filter(t => !tabsToRemove.has(t.id));
 
     if (tabsToRemove.has(activeTabId)) {
@@ -141,10 +186,9 @@ function App() {
       if (closingTab?.parentId && newTabs.find(t => t.id === closingTab.parentId)) {
         setActiveTabId(closingTab.parentId);
       } else {
-        setActiveTabId(newTabs[0]?.id || 'archives');
+        setActiveTabId(newTabs[0]?.id ?? 'archives');
       }
     }
-
     setTabs(newTabs);
   };
 
@@ -154,11 +198,12 @@ function App() {
     if (!week) return;
 
     if (!tabs.find(t => t.id === targetTabId)) {
-      setTabs(prev => [...prev, { id: targetTabId, type: 'week', weekId, baseLabel: week.weekName, closable: true }]);
+      setTabs(prev => [
+        ...prev,
+        { id: targetTabId, type: 'week', weekId, baseLabel: week.weekName, closable: true },
+      ]);
     }
     setActiveTabId(targetTabId);
-
-    // Ensure narratives are loaded for this week
     loadNarrativesForWeek(weekId).catch(() => {});
   };
 
@@ -168,12 +213,14 @@ function App() {
 
     const weekNarratives = getNarrativesForWeek(activeTab.weekId);
     const narrative = weekNarratives.find(n => n.id === narrativeId);
-    const label = narrative ? narrative.headline : 'Narrative Detail';
+    const label = narrative?.headline ?? 'Narrative Detail';
     const narrativeTabId = `narrative-${narrativeId}`;
 
     setTabs(prev => {
-      if (!prev.find(t => t.id === narrativeTabId)) {
-        return [...prev, {
+      if (prev.find(t => t.id === narrativeTabId)) return prev;
+      return [
+        ...prev,
+        {
           id: narrativeTabId,
           type: 'week',
           weekId: activeTab.weekId,
@@ -181,9 +228,8 @@ function App() {
           baseLabel: label,
           closable: true,
           parentId: `week-${activeTab.weekId}`,
-        }];
-      }
-      return prev;
+        },
+      ];
     });
     setActiveTabId(narrativeTabId);
   };
@@ -194,17 +240,18 @@ function App() {
     const videoTabId = `video-${videoId}`;
 
     setTabs(prev => {
-      if (!prev.find(t => t.id === videoTabId)) {
-        return [...prev, {
+      if (prev.find(t => t.id === videoTabId)) return prev;
+      return [
+        ...prev,
+        {
           id: videoTabId,
           type: 'video',
-          videoId: videoId,
-          baseLabel: `Video Insight`,
+          videoId,
+          baseLabel: 'Video Insight',
           closable: true,
-          parentId: activeTab ? activeTab.id : undefined
-        }];
-      }
-      return prev;
+          parentId: activeTab ? activeTab.id : undefined,
+        },
+      ];
     });
     setActiveTabId(videoTabId);
   };
@@ -212,20 +259,21 @@ function App() {
   const handleTrendClick = (trendId: string) => {
     const trendTabId = `trend-${trendId}`;
     const trend = trends.find(t => t.id === trendId);
-    const label = trend ? trend.name : 'Trend Detail';
+    const label = trend?.name ?? 'Trend Detail';
 
     setTabs(prev => {
-      if (!prev.find(t => t.id === trendTabId)) {
-        return [...prev, {
+      if (prev.find(t => t.id === trendTabId)) return prev;
+      return [
+        ...prev,
+        {
           id: trendTabId,
           type: 'trends',
           trendId,
           baseLabel: label,
           closable: true,
           parentId: 'trends',
-        }];
-      }
-      return prev;
+        },
+      ];
     });
     setActiveTabId(trendTabId);
   };
@@ -233,16 +281,21 @@ function App() {
   const handleNarrativeClickFromTrend = (narrativeId: string, weekId: string) => {
     const parentTabId = `week-${weekId}`;
     const narrativeTabId = `narrative-${narrativeId}`;
-
     const week = weeks.find(w => w.id === weekId);
     const weekNarratives = getNarrativesForWeek(weekId);
     const narrative = weekNarratives.find(n => n.id === narrativeId);
-    const label = narrative?.headline || 'Narrative Detail';
+    const label = narrative?.headline ?? 'Narrative Detail';
 
     setTabs(prev => {
       const newTabs = [...prev];
       if (!newTabs.find(t => t.id === parentTabId)) {
-        newTabs.push({ id: parentTabId, type: 'week', weekId, baseLabel: week?.weekName || 'Week', closable: true });
+        newTabs.push({
+          id: parentTabId,
+          type: 'week',
+          weekId,
+          baseLabel: week?.weekName ?? 'Week',
+          closable: true,
+        });
       }
       if (!newTabs.find(t => t.id === narrativeTabId)) {
         newTabs.push({
@@ -258,24 +311,30 @@ function App() {
       return newTabs;
     });
     setActiveTabId(narrativeTabId);
-
-    // Ensure week narratives are loaded
     loadNarrativesForWeek(weekId).catch(() => {});
   };
 
   const handleBack = () => handleCloseTab(activeTabId);
 
-  const tickerItems = trends.length > 0
-    ? trends.map(t => `${t.name} | Heat: ${t.totalEngagement.toFixed(0)}`)
-    : ['Loading intelligence feed...'];
+  const tickerItems =
+    trends.length > 0
+      ? trends.map(t => `${t.name} | Heat: ${t.totalEngagement.toFixed(0)}`)
+      : ['Loading intelligence feed…'];
 
   if (isLoading) {
     return (
       <div className="app-container">
-        <Masthead tickerItems={['Connecting to intelligence feed...']} />
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Masthead tickerItems={['Connecting to intelligence feed…']} />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '60vh',
+          }}
+        >
           <p className="font-mono" style={{ color: 'var(--ink-faded)', fontSize: '1.1rem' }}>
-            Loading weekly intelligence digest...
+            Loading weekly intelligence digest…
           </p>
         </div>
       </div>
@@ -297,14 +356,25 @@ function App() {
     if (activeTab.type === 'trends') {
       if (activeTab.trendId) {
         const trend = trends.find(t => t.id === activeTab.trendId);
-        if (trend) return <TrendDetail trend={trend} onBack={handleBack} onNarrativeClick={handleNarrativeClickFromTrend} />;
+        if (trend)
+          return (
+            <TrendDetail
+              trend={trend}
+              onBack={handleBack}
+              onNarrativeClick={handleNarrativeClickFromTrend}
+            />
+          );
       }
-      return <Trends trends={trends} trendAlerts={trendAlerts} onSelectTrend={handleTrendClick} />;
+      return (
+        <Trends
+          trends={trends}
+          trendAlerts={trendAlerts}
+          onSelectTrend={handleTrendClick}
+        />
+      );
     }
 
-    if (activeTab.type === 'claims') {
-      return <Claims />;
-    }
+    if (activeTab.type === 'claims') return <Claims />;
 
     if (activeTab.type === 'archives') {
       return <Archives weeks={weeks} onOpenWeek={handleOpenWeek} />;
@@ -319,12 +389,30 @@ function App() {
         };
 
         if (activeTab.narrativeId) {
-          const narrative = weekWithNarratives.narratives.find(n => n.id === activeTab.narrativeId);
+          const narrative = weekWithNarratives.narratives.find(
+            n => n.id === activeTab.narrativeId,
+          );
           if (narrative) {
-            return <NarrativeDetail narrative={narrative} trends={trends} onBack={handleBack} onTrendClick={handleTrendClick} onVideoClick={handleVideoClick} />;
+            return (
+              <NarrativeDetail
+                narrative={narrative}
+                trends={trends}
+                onBack={handleBack}
+                onTrendClick={handleTrendClick}
+                onVideoClick={handleVideoClick}
+              />
+            );
           }
         }
-        return <WeekReport week={weekWithNarratives} trends={trends} onReadMore={handleReadMore} onTrendClick={handleTrendClick} />;
+
+        return (
+          <WeekReport
+            week={weekWithNarratives}
+            trends={trends}
+            onReadMore={handleReadMore}
+            onTrendClick={handleTrendClick}
+          />
+        );
       }
     }
 
@@ -334,17 +422,13 @@ function App() {
   return (
     <div className="app-container">
       <Masthead tickerItems={tickerItems} />
-
       <FolderTabs
         tabs={tabs}
         activeTabId={activeTabId}
         onTabChange={setActiveTabId}
         onCloseTab={handleCloseTab}
       />
-
-      <main className="folder-content">
-        {renderContent()}
-      </main>
+      <main className="folder-content">{renderContent()}</main>
     </div>
   );
 }
