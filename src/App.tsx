@@ -19,7 +19,7 @@ import {
   adaptWeeks,
   adaptNarrativesList,
   adaptTrendsList,
-  adaptTrendDetail as _adaptTrendDetail,
+  //adaptTrendDetail as _adaptTrendDetail,
   generateTrendAlerts,
   parseWeekNumber,
 } from './lib/adapters';
