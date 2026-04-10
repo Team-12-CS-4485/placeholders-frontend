@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 claude.md
 settings.local.json
+
+# graphify knowledge graph outputs
+graphify-out/
+
+.claude/
