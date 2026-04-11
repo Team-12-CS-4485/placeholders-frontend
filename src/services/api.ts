@@ -152,6 +152,8 @@ export interface BackendTrendListItem {
   dominant_public_sentiment: string;
   sentiment_divergence: boolean;
   top_topics: string[];
+  narrative_headline?: string | null;
+  narrative_summary?: string | null;
 }
 
 export interface BackendTrendListResponse {
@@ -235,6 +237,26 @@ export interface BackendArticleDetail extends BackendArticleListItem {
   body: string;
 }
 
+export interface BackendWeekNarrativeItem {
+  cluster_id: number;
+  cluster_label: string;
+  narrative_headline: string | null;
+  narrative_summary: string | null;
+  week_overview: string | null;
+  top_topics: string[];
+  top_claims: string[];
+  video_count: number;
+  view_count: number;
+  breaking_count: number;
+  dominant_sentiment: string;
+}
+
+export interface BackendWeekNarrativesResponse {
+  week: string;
+  total: number;
+  narratives: BackendWeekNarrativeItem[];
+}
+
 // --- Fetch functions ---
 
 export function fetchWeeks(): Promise<BackendWeeksResponse> {
@@ -243,6 +265,10 @@ export function fetchWeeks(): Promise<BackendWeeksResponse> {
 
 export function fetchNarrativesList(week: string): Promise<BackendNarrativeListResponse> {
   return get(`/api/narratives?week=${encodeURIComponent(week)}`);
+}
+
+export function fetchWeekNarratives(week: string): Promise<BackendWeekNarrativesResponse> {
+  return get(`/api/weeks/${encodeURIComponent(week)}`);
 }
 
 export function fetchNarrativeDetail(clusterId: number): Promise<BackendNarrativeDetail> {

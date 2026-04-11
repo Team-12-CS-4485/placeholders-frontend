@@ -11,13 +11,13 @@ import { Videos } from './components/views/Videos';
 import { VideoDetail } from './components/views/VideoDetail';
 import {
   fetchWeeks,
-  fetchNarrativesList,
+  fetchWeekNarratives,
   fetchTrendsList,
   fetchArticles,
 } from './services/api';
 import {
   adaptWeeks,
-  adaptNarrativesList,
+  adaptWeekNarrativesList,
   adaptTrendsList,
   //adaptTrendDetail as _adaptTrendDetail,
   generateTrendAlerts,
@@ -99,7 +99,7 @@ function App() {
     const weekNumber = parseWeekNumber(weekId);
 
     const [narrativesRes, articlesRes] = await Promise.all([
-      fetchNarrativesList(weekId),
+      fetchWeekNarratives(weekId),
       weekNumber !== undefined
         ? fetchArticles({ week: weekNumber, limit: 200 })
         : Promise.resolve({ articles: [] as BackendArticleListItem[], total: 0 }),
@@ -107,10 +107,10 @@ function App() {
 
     // Build a fast cluster_id → article lookup
     const articlesByCluster = new Map<number, BackendArticleListItem>(
-      articlesRes.articles.map(a => [a.cluster_id, a]),
+      articlesRes.articles.map((a: BackendArticleListItem) => [a.cluster_id, a]),
     );
 
-    const narratives = adaptNarrativesList(
+    const narratives = adaptWeekNarrativesList(
       narrativesRes.narratives,
       weekId,
       articlesByCluster,

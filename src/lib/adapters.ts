@@ -9,6 +9,7 @@ import type {
   BackendVideoListResponse,
   BackendVideoDetailItem,
   BackendArticleListItem,
+  BackendWeekNarrativeItem,
 } from '../services/api';
 import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video, VideoDetailData } from '../types';
 
@@ -100,6 +101,41 @@ export function adaptNarrativesList(
         ? truncate(article.overview, 200)
         : item.top_topics.join(' · '),
       fullText: item.top_topics.length ? [item.top_topics.join(' · ')] : [],
+      pageNumber: index + 1,
+      claims: [],
+      trendIds: [item.cluster_id.toString()],
+    };
+  });
+}
+
+// ---- Narratives (week-specific, from cluster-weeks table) ----
+
+/**
+ * Adapts items from GET /api/weeks/{week} — each item carries the headline
+ * and summary that were recorded for that specific week, not the current one.
+ * Article metadata is merged in the same way as adaptNarrativesList.
+ */
+export function adaptWeekNarrativesList(
+  items: BackendWeekNarrativeItem[],
+  weekId: string,
+  articlesByCluster?: Map<number, BackendArticleListItem>,
+): Narrative[] {
+  return items.map((item, index) => {
+    const article = articlesByCluster?.get(item.cluster_id);
+    const headline = article?.title ?? item.narrative_headline ?? item.cluster_label;
+    const summary = article?.overview
+      ? truncate(article.overview, 200)
+      : item.narrative_summary ?? item.week_overview ?? item.top_topics.join(' · ');
+    return {
+      id: item.cluster_id.toString(),
+      weekId,
+      category: '',
+      headline,
+      subheadline: item.cluster_label,
+      overview: article?.overview ?? item.week_overview ?? undefined,
+      articleId: article?.article_id,
+      summary,
+      fullText: item.top_claims.length ? item.top_claims : item.top_topics,
       pageNumber: index + 1,
       claims: [],
       trendIds: [item.cluster_id.toString()],
@@ -226,8 +262,8 @@ export function adaptVideoDetail(item: BackendVideoDetailItem): VideoDetailData 
 export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
   return items.map(item => ({
     id: item.cluster_id.toString(),
-    name: item.label,
-    description: item.top_topics.join(' · '),
+    name: item.narrative_headline ?? item.label,
+    description: item.narrative_summary ?? item.top_topics.join(' · '),
     overallSentiment: capitalize(item.sentiment_label),
     recentSentiment: capitalize(item.recent_sentiment_label),
     totalEngagement: item.heat_score,
@@ -267,8 +303,8 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
 
   return {
     id: detail.cluster_id.toString(),
-    name: detail.label,
-    description: detail.top_topics.join(' · '),
+    name: detail.narrative_headline ?? detail.label,
+    description: detail.narrative_summary ?? detail.top_topics.join(' · '),
     overallSentiment: capitalize(detail.sentiment_label),
     recentSentiment: capitalize(detail.recent_sentiment_label),
     totalEngagement: detail.heat_score,
