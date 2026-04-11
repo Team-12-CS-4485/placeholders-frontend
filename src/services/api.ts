@@ -223,6 +223,7 @@ export interface BackendArticleListItem {
   article_id: string;
   cluster_id: number;
   week_number: number;
+  week_start_date: string;
   title: string;
   overview: string;
   created_at: string;

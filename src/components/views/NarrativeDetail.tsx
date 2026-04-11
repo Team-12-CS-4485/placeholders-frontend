@@ -7,6 +7,7 @@ import {
   type BackendArticleDetail,
 } from '../../services/api';
 import { adaptClaims, parseWeekNumber } from '../../lib/adapters';
+import { weekToDateRange } from '../../lib/weekUtils';
 import { MarkdownBody } from '../shared/MarkdownBody';
 
 interface NarrativeDetailProps {
@@ -141,11 +142,7 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
         >
           {narrative.category}
           {article
-            ? ` · Week ${article.week_number} · ${new Date(article.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}`
+            ? ` · Week ${article.week_number} · ${weekToDateRange(`week${article.week_number}`)}`
             : ''}
         </p>
 
