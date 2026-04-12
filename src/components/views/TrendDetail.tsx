@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Trend } from '../../types';
-import { fetchTrendDetail, fetchArticles, type BackendArticleListItem } from '../../services/api';
+import { fetchTrendDetail } from '../../services/api';
 import { adaptTrendDetail } from '../../lib/adapters';
 
 interface TrendDetailProps {
@@ -12,25 +12,12 @@ interface TrendDetailProps {
 export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarrativeClick }) => {
   const [fullTrend, setFullTrend] = useState<Trend | null>(null);
   const [chartRange, setChartRange] = useState<'30 Days' | '90 Days'>('30 Days');
-  const [articlesByWeek, setArticlesByWeek] = useState<Map<number, BackendArticleListItem>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
     fetchTrendDetail(+trend.id)
       .then(data => { if (!cancelled) setFullTrend(adaptTrendDetail(data)); })
       .catch(() => { /* keep showing list-level data */ });
-    return () => { cancelled = true; };
-  }, [trend.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchArticles({ cluster_id: +trend.id, limit: 20 })
-      .then(res => {
-        if (!cancelled) {
-          setArticlesByWeek(new Map(res.articles.map(a => [a.week_number, a])));
-        }
-      })
-      .catch(() => {});
     return () => { cancelled = true; };
   }, [trend.id]);
 
@@ -116,7 +103,7 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
               <li key={weekId} className="classified-item" style={{ cursor: 'pointer' }} onClick={() => onNarrativeClick(narrativeId, weekId)}>
                 <span className="classified-meta">{weekName}</span>
                 <div className="classified-title clickable-title" style={{ fontSize: '1rem' }}>
-                  {articlesByWeek.get(parseInt(weekId.replace('week', ''), 10))?.title ?? display.name}
+                  {display.weekHeadlines[weekId] ?? display.name}
                 </div>
               </li>
             ))}

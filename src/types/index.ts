@@ -71,6 +71,7 @@ export interface Trend {
     '90 Days': { label: string; value: number }[];
   };
   creatorRisks: CreatorRisk[];
+  weekHeadlines: Record<string, string>;
 }
 
 export interface TrendAlert {

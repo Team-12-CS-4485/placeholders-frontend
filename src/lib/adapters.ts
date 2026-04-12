@@ -271,6 +271,7 @@ export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
     detailedAnalysis: [],
     barChartData: { '30 Days': [], '90 Days': [] },
     creatorRisks: [],
+    weekHeadlines: {},
   }));
 }
 
@@ -301,6 +302,13 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
     riskLevel: normalizeRiskLevel(c.riskLevel),
   }));
 
+  const weekHeadlines: Record<string, string> = {};
+  for (const w of weekData) {
+    if (w.narrative_headline) {
+      weekHeadlines[w.week] = w.narrative_headline;
+    }
+  }
+
   return {
     id: detail.cluster_id.toString(),
     name: detail.narrative_headline ?? detail.label,
@@ -315,6 +323,7 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
       '90 Days': barChart90.length ? barChart90 : [{ label: 'N/A', value: 0 }],
     },
     creatorRisks,
+    weekHeadlines,
   };
 }
 

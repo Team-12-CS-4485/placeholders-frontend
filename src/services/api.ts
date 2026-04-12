@@ -58,6 +58,8 @@ export interface BackendWeekData {
   view_count: number;
   breaking_count: number;
   sentiment_breakdown: Record<string, number>;
+  narrative_headline?: string;
+  week_overview?: string;
 }
 
 export interface BackendCreatorRisk {
