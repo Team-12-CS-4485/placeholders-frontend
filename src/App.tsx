@@ -374,7 +374,10 @@ function App() {
       );
     }
 
-    if (activeTab.type === 'claims') return <Claims />;
+    if (activeTab.type === 'claims') {
+      const currentWeekId = tabs.find(t => t.type === 'week' && !t.closable)?.weekId ?? weeks[0]?.id ?? '';
+      return <Claims currentWeekId={currentWeekId} weeks={weeks} />;
+    }
 
     if (activeTab.type === 'archives') {
       return <Archives weeks={weeks} onOpenWeek={handleOpenWeek} />;
