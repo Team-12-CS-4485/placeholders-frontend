@@ -1,4 +1,5 @@
 const BASE = 'https://placeholders-backend.onrender.com';
+//Stupid comment to trigger a commit
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
