@@ -1,4 +1,4 @@
-const BASE = 'https://placeholders-backend.onrender.com';
+const BASE = 'https://newsify-656172157874.us-south1.run.app';
 //Stupid comment to trigger a commit
 
 async function get<T>(path: string): Promise<T> {
