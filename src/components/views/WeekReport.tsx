@@ -70,7 +70,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
                 {narrative.headline}
               </h2>
               
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '15px', paddingLeft: '5px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '0', paddingLeft: '5px' }}>
                 {narrative.trendIds.map(tId => {
                   const trend = trends.find(t => t.id === tId);
                   return trend ? (
@@ -81,8 +81,10 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
                 })}
               </div>
 
-              <p className="lead" style={{ marginBottom: '15px' }}>{narrative.subheadline}</p>
-              <p>{narrative.summary}</p>
+              {narrative.trendIds.filter(tId => trends.find(t => t.id === tId)).length === 0 && (
+                <p className="lead" style={{ marginBottom: '15px' }}>{narrative.subheadline}</p>
+              )}
+              <p style={{ marginTop: '8px' }}>{narrative.summary}</p>
               <button 
                 className="btn-link" 
                 onClick={() => onReadMore(narrative.id)}
