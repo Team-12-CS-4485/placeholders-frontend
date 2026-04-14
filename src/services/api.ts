@@ -1,4 +1,4 @@
-const BASE = 'https://newsify-656172157874.us-south1.run.app';
+const BASE = 'https://placeholders-backend.onrender.com';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
