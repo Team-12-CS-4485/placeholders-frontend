@@ -7,6 +7,17 @@
  */
 export const WEEK_1_START = new Date('2026-03-02');
 
+/**
+ * Returns the weekId (e.g. "week7") for the current calendar week
+ * based on WEEK_1_START.
+ */
+export function getCurrentWeekId(): string {
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const elapsed = Date.now() - WEEK_1_START.getTime();
+  const weekNum = Math.max(1, Math.floor(elapsed / msPerWeek) + 1);
+  return `week${weekNum}`;
+}
+
 export function weekToDateRange(weekId: string): string {
   const match = weekId.match(/^week(\d+)$/i);
   if (!match) return '';

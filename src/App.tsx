@@ -23,6 +23,7 @@ import {
   generateTrendAlerts,
   parseWeekNumber,
 } from './lib/adapters';
+import { getCurrentWeekId } from './lib/weekUtils';
 import type { WeekData, Trend, TrendAlert, Narrative } from './types';
 import type { BackendArticleListItem } from './services/api';
 
@@ -82,6 +83,7 @@ function App() {
   const [trendAlerts, setTrendAlerts] = useState<TrendAlert[]>([]);
   const [narrativesByWeek, setNarrativesByWeek] = useState<Record<string, Narrative[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
@@ -123,11 +125,16 @@ function App() {
     return narratives;
   }
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load / refresh ──────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
+      const currentWeekId = getCurrentWeekId();
+      const cachedWeeks = loadWeeksCache();
+      const cacheHasCurrentWeek = cachedWeeks.some(w => w.id === currentWeekId);
+      const shouldFetchWeeks = !isCacheFresh() || !cacheHasCurrentWeek;
+
       const [weeksRes, trendsRes] = await Promise.all([
-        isCacheFresh() ? Promise.resolve(null) : fetchWeeks(),
+        shouldFetchWeeks ? fetchWeeks() : Promise.resolve(null),
         fetchTrendsList(),
       ]);
 
@@ -144,7 +151,8 @@ function App() {
       setTrendAlerts(alerts);
 
       if (adaptedWeeks.length > 0) {
-        const currentWeek = adaptedWeeks[0];
+        const currentWeek =
+          adaptedWeeks.find(w => w.id === currentWeekId) ?? adaptedWeeks[0];
         const narratives = await loadNarrativesForWeek(currentWeek.id);
 
         const firstTabId = `week-${currentWeek.id}`;
@@ -171,7 +179,14 @@ function App() {
 
     init().catch(() => setIsLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshKey]);
+
+  const handleRefresh = () => {
+    localStorage.removeItem(WEEKS_CACHE_KEY);
+    setNarrativesByWeek({});
+    setIsLoading(true);
+    setRefreshKey(k => k + 1);
+  };
 
   // ── Tab management ──────────────────────────────────────────────────────────
   const handleCloseTab = (tabId: string) => {
@@ -424,7 +439,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Masthead tickerItems={tickerItems} />
+      <Masthead tickerItems={tickerItems} onRefresh={handleRefresh} />
       <FolderTabs
         tabs={tabs}
         activeTabId={activeTabId}
