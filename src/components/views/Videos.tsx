@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import type { Video } from '../../types';
 import { fetchVideosList } from '../../services/api';
 import { adaptVideoList } from '../../lib/adapters';
@@ -6,11 +6,12 @@ import { formatCount } from '../../lib/weekUtils';
 
 interface VideosProps {
   onVideoClick: (videoId: string) => void;
+  onVideosCached?: (videos: Video[]) => void;
 }
 
 type SortOrder = 'most-viewed' | 'most-engaging' | 'most-recent' | 'by-narrative';
 
-export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
+export const Videos: React.FC<VideosProps> = ({ onVideoClick, onVideosCached }) => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<SortOrder>('most-viewed');
@@ -18,6 +19,9 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
   // Pagination state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const emitVideosCached = useEffectEvent((items: Video[]) => {
+    onVideosCached?.(items);
+  });
 
   // Initial fetch
   useEffect(() => {
@@ -25,9 +29,11 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
     // Fetch an initial batch of 24 to fill 2-3 rows nicely (since it's a 3-column grid)
     fetchVideosList(24).then(res => {
       if (!cancelled) {
-        setVideos(adaptVideoList(res));
+        const adapted = adaptVideoList(res);
+        setVideos(adapted);
         setNextCursor(res.next_cursor || null);
         setIsLoading(false);
+        emitVideosCached(adapted);
       }
     }).catch(() => {
       if (!cancelled) setIsLoading(false);
@@ -41,8 +47,10 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
     setIsLoadingMore(true);
     try {
       const res = await fetchVideosList(24, nextCursor);
-      setVideos(prev => [...prev, ...adaptVideoList(res)]);
+      const adapted = adaptVideoList(res);
+      setVideos(prev => [...prev, ...adapted]);
       setNextCursor(res.next_cursor || null);
+      onVideosCached?.(adapted);
     } catch (error) {
       console.error("Failed to load more videos:", error);
     } finally {

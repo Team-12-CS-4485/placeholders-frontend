@@ -1,12 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Ticker } from '../shared/Ticker';
+import type { SearchMatch } from '../../lib/search';
 
 interface MastheadProps {
   tickerItems: string[];
   onRefresh?: () => void;
+  searchQuery?: string;
+  searchResults?: SearchMatch[];
+  onSearchQueryChange?: (query: string) => void;
+  onSearchSelect?: (result: SearchMatch) => void;
 }
 
-export const Masthead: React.FC<MastheadProps> = ({ tickerItems, onRefresh }) => {
+export const Masthead: React.FC<MastheadProps> = ({
+  tickerItems,
+  onRefresh,
+  searchQuery = '',
+  searchResults = [],
+  onSearchQueryChange,
+  onSearchSelect,
+}) => {
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+
   const dateOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',
     year: 'numeric',
@@ -14,6 +29,48 @@ export const Masthead: React.FC<MastheadProps> = ({ tickerItems, onRefresh }) =>
     day: 'numeric'
   };
   const currentDate = new Date().toLocaleDateString('en-US', dateOptions);
+  const canSearch = Boolean(onSearchQueryChange && onSearchSelect);
+  const hasQuery = searchQuery.trim().length > 0;
+  const showResults = canSearch && hasQuery && isSearchFocused;
+  const activeResultIndex =
+    searchResults.length === 0 ? -1 : Math.min(highlightedIndex, searchResults.length - 1);
+
+  const handleSelect = (result: SearchMatch) => {
+    onSearchSelect?.(result);
+    setIsSearchFocused(false);
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = event => {
+    if (!canSearch) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (searchResults.length === 0) return;
+      setHighlightedIndex(index => (index + 1) % searchResults.length);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (searchResults.length === 0) return;
+      setHighlightedIndex(index =>
+        index === 0 ? searchResults.length - 1 : index - 1,
+      );
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      if (activeResultIndex >= 0 && searchResults[activeResultIndex]) {
+        event.preventDefault();
+        handleSelect(searchResults[activeResultIndex]);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setIsSearchFocused(false);
+    }
+  };
 
   return (
     <header className="masthead">
@@ -21,28 +78,96 @@ export const Masthead: React.FC<MastheadProps> = ({ tickerItems, onRefresh }) =>
       <div style={{ fontStyle: 'italic', fontSize: '1.1rem', marginTop: '-5px' }}>
         The Investigative Archive - YouTube Intelligence
       </div>
+      {(canSearch || onRefresh) && (
+        <div className="masthead-controls">
+          {canSearch && (
+            <div
+              className="masthead-search"
+              onBlur={event => {
+                if (
+                  !event.currentTarget.contains(event.relatedTarget as Node | null)
+                ) {
+                  setIsSearchFocused(false);
+                }
+              }}
+            >
+              <label className="sr-only" htmlFor="masthead-search-input">
+                Search cached data
+              </label>
+              <input
+                id="masthead-search-input"
+                type="search"
+                className="masthead-search-input"
+                value={searchQuery}
+                placeholder="Search cached weeks, narratives, trends, claims, and videos..."
+                onChange={event => {
+                  setHighlightedIndex(0);
+                  onSearchQueryChange?.(event.target.value);
+                }}
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
+                spellCheck={false}
+              />
+
+              {hasQuery && (
+                <button
+                  type="button"
+                  className="masthead-search-clear"
+                  onMouseDown={event => event.preventDefault()}
+                  onClick={() => onSearchQueryChange?.('')}
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
+
+              {showResults && (
+                <div className="masthead-search-results" role="listbox">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((result, index) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        className={`masthead-search-result${index === activeResultIndex ? ' active' : ''}`}
+                        onMouseDown={event => {
+                          event.preventDefault();
+                          handleSelect(result);
+                        }}
+                      >
+                        <span className="masthead-search-result-meta">{result.kind}</span>
+                        <span className="masthead-search-result-title">{result.title}</span>
+                        <span className="masthead-search-result-subtitle">{result.subtitle}</span>
+                        {result.snippet && (
+                          <span className="masthead-search-result-snippet">{result.snippet}</span>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="masthead-search-empty">
+                      No cached matches yet for "{searchQuery.trim()}".
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              title="Refresh data"
+              className="masthead-refresh-btn"
+            >
+              ↻ Refresh
+            </button>
+          )}
+        </div>
+      )}
       <div className="sub-meta">
         <span>Vol. CXCIV ... No. 59,321</span>
         <span>Automated Weekly Digest</span>
         <span>{currentDate}</span>
-        {onRefresh && (
-          <button
-            onClick={onRefresh}
-            title="Refresh data"
-            style={{
-              background: 'none',
-              border: '1px solid var(--ink-faded)',
-              cursor: 'pointer',
-              color: 'var(--ink-faded)',
-              fontFamily: 'inherit',
-              fontSize: '0.75rem',
-              padding: '1px 6px',
-              letterSpacing: '0.05em',
-            }}
-          >
-            ↻ Refresh
-          </button>
-        )}
       </div>
       <Ticker items={tickerItems} />
     </header>

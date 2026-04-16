@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import type { Narrative, Trend, Claim } from '../../types';
 import {
   fetchNarrativeClaims,
@@ -16,6 +16,17 @@ interface NarrativeDetailProps {
   onBack: () => void;
   onTrendClick: (trendId: string) => void;
   onVideoClick: (videoId: string) => void;
+  onArticleCached?: (
+    weekId: string,
+    narrativeId: string,
+    article: BackendArticleDetail,
+  ) => void;
+  onClaimsCached?: (
+    weekId: string,
+    narrativeId: string,
+    narrativeTitle: string,
+    claims: Claim[],
+  ) => void;
 }
 
 export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
@@ -24,6 +35,8 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
   onBack,
   onTrendClick,
   onVideoClick,
+  onArticleCached,
+  onClaimsCached,
 }) => {
   const [article, setArticle] = useState<BackendArticleDetail | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -32,6 +45,12 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
 
   const clusterId = +narrative.id;
   const weekNumber = parseWeekNumber(narrative.weekId);
+  const emitArticleCached = useEffectEvent((detail: BackendArticleDetail) => {
+    onArticleCached?.(narrative.weekId, narrative.id, detail);
+  });
+  const emitClaimsCached = useEffectEvent((adaptedClaims: Claim[]) => {
+    onClaimsCached?.(narrative.weekId, narrative.id, narrative.headline, adaptedClaims);
+  });
 
   // ── Article fetch ───────────────────────────────────────────────────────────
   // Strategy:
@@ -51,7 +70,10 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
     try {
       if (narrative.articleId) {
         const detail = await fetchArticleById(narrative.articleId);
-        if (!cancelled) setArticle(detail);
+        if (!cancelled) {
+          setArticle(detail);
+          emitArticleCached(detail);
+        }
         return;
       }
 
@@ -71,7 +93,10 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
       if (!listItem) return;
 
       const detail = await fetchArticleById(listItem.article_id);
-      if (!cancelled) setArticle(detail);
+      if (!cancelled) {
+        setArticle(detail);
+        emitArticleCached(detail);
+      }
     } catch {
       // optional: handle error
     } finally {
@@ -81,7 +106,7 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
 
   load();
   return () => { cancelled = true; };
-}, [clusterId, weekNumber, narrative.articleId]);
+}, [clusterId, narrative.articleId, weekNumber]);
 
   // ── Claims fetch (parallel, independent) ───────────────────────────────────
   useEffect(() => {
@@ -93,7 +118,9 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
     try {
       const res = await fetchNarrativeClaims(clusterId);
       if (!cancelled) {
-        setClaims(adaptClaims(res, narrative.id));
+        const adaptedClaims = adaptClaims(res, narrative.id);
+        setClaims(adaptedClaims);
+        emitClaimsCached(adaptedClaims);
       }
     } catch {
       // optional
