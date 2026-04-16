@@ -91,9 +91,10 @@ h1, h2, h3, h4, h5 {
 
 .masthead-controls {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 12px;
-  margin-top: 16px;
+  width: 100%;
+  margin-bottom: 18px;
 }
 
 .masthead-refresh-btn {
@@ -101,6 +102,7 @@ h1, h2, h3, h4, h5 {
   border: 1px solid var(--ink-faded);
   color: var(--ink-faded);
   cursor: pointer;
+  min-height: 45px;
   font-family: 'Courier Prime', monospace;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
@@ -117,7 +119,9 @@ h1, h2, h3, h4, h5 {
 
 .masthead-search {
   position: relative;
-  flex: 1;
+  flex: 0 0 auto;
+  width: min(340px, 100%);
+  margin-left: auto;
 }
 
 .masthead-search-input {
@@ -154,10 +158,11 @@ h1, h2, h3, h4, h5 {
 
 .masthead-search-results {
   position: absolute;
-  left: 0;
   right: 0;
+  left: auto;
   top: calc(100% + 6px);
   z-index: 40;
+  width: min(720px, calc(100vw - 40px));
   border: 1px solid var(--ink-heavy);
   background: var(--bg-paper);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
@@ -444,7 +449,14 @@ h1, h2, h3, h4, h5 {
   .col-span-12, .col-span-8, .col-span-4, .col-span-6, .col-span-3 { grid-column: span 12; }
   .folder-tabs { flex-wrap: wrap; }
   .masthead h1 { font-size: 2.5rem; }
-  .masthead-controls { flex-direction: column; }
+  .masthead-controls {
+    flex-direction: column;
+  }
+  .masthead-search {
+    width: 100%;
+    margin-left: 0;
+  }
+  .masthead-search-results { width: 100%; }
   .masthead-refresh-btn { min-height: 44px; }
   .masthead .sub-meta { flex-direction: column; gap: 4px; align-items: center; }
 }

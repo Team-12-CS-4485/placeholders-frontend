@@ -74,12 +74,18 @@ export const Masthead: React.FC<MastheadProps> = ({
 
   return (
     <header className="masthead">
-      <h1>Newsify</h1>
-      <div style={{ fontStyle: 'italic', fontSize: '1.1rem', marginTop: '-5px' }}>
-        The Investigative Archive - YouTube Intelligence
-      </div>
       {(canSearch || onRefresh) && (
         <div className="masthead-controls">
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              title="Refresh data"
+              className="masthead-refresh-btn"
+            >
+              ↻ Refresh
+            </button>
+          )}
+
           {canSearch && (
             <div
               className="masthead-search"
@@ -152,18 +158,12 @@ export const Masthead: React.FC<MastheadProps> = ({
               )}
             </div>
           )}
-
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              title="Refresh data"
-              className="masthead-refresh-btn"
-            >
-              ↻ Refresh
-            </button>
-          )}
         </div>
       )}
+      <h1>Newsify</h1>
+      <div style={{ fontStyle: 'italic', fontSize: '1.1rem', marginTop: '-5px' }}>
+        The Investigative Archive - YouTube Intelligence
+      </div>
       <div className="sub-meta">
         <span>Vol. CXCIV ... No. 59,321</span>
         <span>Automated Weekly Digest</span>
