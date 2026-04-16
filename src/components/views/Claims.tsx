@@ -136,7 +136,15 @@ export const Claims: React.FC<ClaimsProps> = ({ currentWeekId, weeks }) => {
   }, [selectedWeekId]);
 
   const selectedWeek = weeks.find(w => w.id === selectedWeekId);
-  const categories = Array.from(new Set(narratives.map(n => n.category).filter(Boolean)));
+
+  const CLAIM_COLUMNS: { type: 'consensus' | 'debated' | 'unique'; label: string }[] = [
+    { type: 'consensus', label: 'Consensus' },
+    { type: 'debated',   label: 'Debated'   },
+    { type: 'unique',    label: 'Unique'     },
+  ];
+
+  // Flatten all claims across narratives, grouped by claimType
+  const allClaims = narratives.flatMap(n => n.claims);
 
   return (
     <section className="view-section">
@@ -188,17 +196,18 @@ export const Claims: React.FC<ClaimsProps> = ({ currentWeekId, weeks }) => {
         </div>
       ) : (
         <div className="newspaper-grid">
-          {categories.length === 0 && (
+          {allClaims.length === 0 && (
             <p className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)', gridColumn: '1 / -1' }}>
               No claims found for {selectedWeek?.weekName ?? selectedWeekId}.
             </p>
           )}
 
-          {categories.map((category, colIdx) => {
-            const catNarratives = narratives.filter(n => n.category === category);
-            if (colIdx >= 3) return null;
+          {CLAIM_COLUMNS.map((col, colIdx) => {
+            const colClaims = allClaims
+              .filter(c => c.claimType === col.type)
+              .sort((a, b) => b.riskScore - a.riskScore);
             return (
-              <div key={category} className={`col-span-4${colIdx > 0 ? ' vertical-divider' : ''}`}>
+              <div key={col.type} className={`col-span-4${colIdx > 0 ? ' vertical-divider' : ''}`}>
                 <div
                   style={{
                     backgroundColor: 'var(--ink-heavy)',
@@ -216,48 +225,28 @@ export const Claims: React.FC<ClaimsProps> = ({ currentWeekId, weeks }) => {
                       textTransform: 'uppercase',
                     }}
                   >
-                    {category}
+                    {col.label}
                   </h3>
                 </div>
 
-                {catNarratives.length === 0 && (
+                {colClaims.length === 0 && (
                   <p className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)' }}>
-                    No claims in this category.
+                    No {col.label.toLowerCase()} claims this week.
                   </p>
                 )}
 
-                {catNarratives.map((narrative, idx) => {
-                  const claimCount = narrative.claims.length;
-                  return (
-                    <div
-                      key={narrative.id}
-                      style={{
-                        marginBottom: '20px',
-                        paddingBottom: '20px',
-                        borderBottom: idx < catNarratives.length - 1 ? '1px solid var(--ink-heavy)' : 'none',
-                      }}
-                    >
-                      <p
-                        className="font-mono"
-                        style={{ fontSize: '0.75rem', color: 'var(--ink-faded)', marginBottom: '6px', textIndent: 0 }}
-                      >
-                        NARRATIVE CLUSTER ID: {narrative.id.toUpperCase()}
-                        {claimCount > 0 && (
-                          <span style={{ marginLeft: '8px' }}>· {claimCount} claim{claimCount !== 1 ? 's' : ''}</span>
-                        )}
-                      </p>
-                      <h4 style={{ fontSize: '1.1rem', marginBottom: '12px' }}>{narrative.headline}</h4>
-
-                      {narrative.claims.map(claim => (
-                        <ClaimEntry key={claim.id} claim={claim} />
-                      ))}
-
-                      {narrative.claims.length === 0 && (
-                        <p style={{ fontSize: '0.85rem', color: 'var(--ink-faded)', fontStyle: 'italic' }}>No claims extracted.</p>
-                      )}
-                    </div>
-                  );
-                })}
+                {colClaims.map((claim, idx) => (
+                  <div
+                    key={claim.id}
+                    style={{
+                      marginBottom: '20px',
+                      paddingBottom: '20px',
+                      borderBottom: idx < colClaims.length - 1 ? '1px solid var(--ink-heavy)' : 'none',
+                    }}
+                  >
+                    <ClaimEntry claim={claim} />
+                  </div>
+                ))}
               </div>
             );
           })}
