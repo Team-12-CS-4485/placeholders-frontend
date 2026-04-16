@@ -72,6 +72,12 @@ export const Masthead: React.FC<MastheadProps> = ({
     }
   };
 
+  const handleSearchAction = () => {
+    if (!hasQuery) return;
+    onSearchQueryChange?.('');
+    setHighlightedIndex(0);
+  };
+
   return (
     <header className="masthead">
       {(canSearch || onRefresh) && (
@@ -102,10 +108,10 @@ export const Masthead: React.FC<MastheadProps> = ({
               </label>
               <input
                 id="masthead-search-input"
-                type="search"
+                type="text"
                 className="masthead-search-input"
                 value={searchQuery}
-                placeholder="Search cached weeks, narratives, trends, claims, and videos..."
+                placeholder="Search weeks, narratives, trends, claims, videos"
                 onChange={event => {
                   setHighlightedIndex(0);
                   onSearchQueryChange?.(event.target.value);
@@ -116,17 +122,36 @@ export const Masthead: React.FC<MastheadProps> = ({
                 spellCheck={false}
               />
 
-              {hasQuery && (
-                <button
-                  type="button"
-                  className="masthead-search-clear"
-                  onMouseDown={event => event.preventDefault()}
-                  onClick={() => onSearchQueryChange?.('')}
-                  aria-label="Clear search"
-                >
-                  ×
-                </button>
-              )}
+              <button
+                type="button"
+                className={`masthead-search-action${hasQuery ? ' is-clear' : ' is-idle'}`}
+                onMouseDown={event => {
+                  if (!hasQuery) {
+                    event.preventDefault();
+                  }
+                }}
+                onClick={handleSearchAction}
+                aria-label={hasQuery ? 'Clear search' : 'Search'}
+                disabled={!hasQuery}
+                tabIndex={hasQuery ? 0 : -1}
+              >
+                {hasQuery ? (
+                  <span aria-hidden="true">×</span>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4.5 4.5" />
+                  </svg>
+                )}
+              </button>
 
               {showResults && (
                 <div className="masthead-search-results" role="listbox">

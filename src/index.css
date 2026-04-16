@@ -120,7 +120,7 @@ h1, h2, h3, h4, h5 {
 .masthead-search {
   position: relative;
   flex: 0 0 auto;
-  width: min(340px, 100%);
+  width: min(455px, 100%);
   margin-left: auto;
 }
 
@@ -131,7 +131,10 @@ h1, h2, h3, h4, h5 {
   color: var(--ink-heavy);
   font-family: 'Courier Prime', monospace;
   font-size: 0.95rem;
-  padding: 12px 42px 12px 14px;
+  padding: 12px 46px 12px 14px;
+  min-height: 46px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .masthead-search-input:focus {
@@ -139,20 +142,54 @@ h1, h2, h3, h4, h5 {
   outline-offset: 2px;
 }
 
-.masthead-search-clear {
+.masthead-search-input::-webkit-search-decoration,
+.masthead-search-input::-webkit-search-cancel-button,
+.masthead-search-input::-webkit-search-results-button,
+.masthead-search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.masthead-search-input::placeholder {
+  color: rgba(17, 17, 17, 0.68);
+  font-size: 0.85rem;
+}
+
+.masthead-search-action {
   position: absolute;
   top: 50%;
   right: 10px;
   transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
   color: var(--ink-faded);
-  cursor: pointer;
+  padding: 0;
   font-size: 1.15rem;
   line-height: 1;
+  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
-.masthead-search-clear:hover {
+.masthead-search-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.masthead-search-action.is-clear {
+  cursor: pointer;
+}
+
+.masthead-search-action.is-idle {
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.masthead-search-action.is-clear:hover {
   color: var(--ink-heavy);
 }
 
