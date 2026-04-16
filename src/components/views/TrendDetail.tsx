@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Trend } from '../../types';
 import { fetchTrendDetail } from '../../services/api';
 import { adaptTrendDetail } from '../../lib/adapters';
+import { BarChart } from '../shared/BarChart';
 
 interface TrendDetailProps {
   trend: Trend;
@@ -23,13 +24,12 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
 
   const display = fullTrend ?? trend;
   const chartData = display.barChartData[chartRange];
-  const maxVal = Math.max(...chartData.map(d => d.value), 1);
 
   // Contributing narratives derived from week_data: each week that had coverage
   // shares the same cluster_id as the trend, so the narrative id = trend.id
   const contributingWeeks = fullTrend
     ? Object.keys(
-        fullTrend.barChartData['All Weeks'].reduce((acc, d) => {
+        fullTrend.barChartData['All Weeks'].reduce((acc: Record<string, number>, d: { label: string; value: number }) => {
           acc[d.label] = d.value;
           return acc;
         }, {} as Record<string, number>)
@@ -43,9 +43,20 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
     <section className="view-section">
       <button className="btn-back" onClick={onBack}>&larr; Back to Trends</button>
 
-      <div className="masthead" style={{ borderBottom: '2px solid var(--ink-heavy)', marginBottom: '30px', paddingBottom: '15px', textAlign: 'left' }}>
+      <div
+        className="masthead"
+        style={{
+          borderBottom: '2px solid var(--ink-heavy)',
+          marginBottom: '30px',
+          paddingBottom: '15px',
+          textAlign: 'left',
+        }}
+      >
         <h1 style={{ fontSize: '2.5rem', textTransform: 'none' }}>{display.name}</h1>
-        <p className="font-mono" style={{ fontSize: '1rem', marginTop: '10px', color: 'var(--ink-faded)' }}>
+        <p
+          className="font-mono"
+          style={{ fontSize: '1rem', marginTop: '10px', color: 'var(--ink-faded)' }}
+        >
           Overall Sentiment: {display.overallSentiment} | Recent (7d): {display.recentSentiment} | Heat Score: {display.totalEngagement.toFixed(0)}
         </p>
       </div>
@@ -60,10 +71,21 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
               ))}
             </ul>
           ) : (
-            <p style={{ marginTop: '15px', fontStyle: 'italic', color: 'var(--ink-faded)' }}>Loading analysis...</p>
+            <p style={{ marginTop: '15px', fontStyle: 'italic', color: 'var(--ink-faded)' }}>
+              Loading analysis...
+            </p>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '40px' }}>
+          {/* ── Engagement Volume ── */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '40px',
+              marginBottom: '12px',
+            }}
+          >
             <h3>Engagement Volume</h3>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -81,26 +103,26 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
             </div>
           </div>
 
-          <div style={{ border: '2px solid var(--ink-heavy)', padding: '20px', height: '250px', display: 'flex', alignItems: 'flex-end', gap: '10px', backgroundImage: 'repeating-linear-gradient(transparent, transparent 19px, #ccc 20px)', marginTop: '15px' }}>
-            {chartData.map((d, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
-                  <div style={{ width: '100%', backgroundColor: 'var(--ink-heavy)', height: `${(d.value / maxVal) * 100}%` }} title={`${d.label}: ${d.value}`}></div>
-                </div>
-                <span className="font-mono" style={{ fontSize: '0.7rem', marginTop: '5px' }}>{d.label}</span>
-              </div>
-            ))}
-            {chartData.length === 0 && (
-              <p style={{ color: 'var(--ink-faded)', fontStyle: 'italic', fontSize: '0.9rem' }}>Loading chart data...</p>
-            )}
-          </div>
+          {/* Fixed proportional bar chart */}
+          {chartData.length > 0 ? (
+            <BarChart data={chartData} height={240} />
+          ) : (
+            <p style={{ color: 'var(--ink-faded)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+              {fullTrend ? 'No chart data available.' : 'Loading chart data…'}
+            </p>
+          )}
         </div>
 
         <div className="col-span-4 vertical-divider article-block">
           <h3>Contributing Narratives</h3>
           <ul className="classified-list" style={{ marginTop: '15px', marginBottom: '30px' }}>
             {contributingWeeks.map(({ weekId, weekName, narrativeId }) => (
-              <li key={weekId} className="classified-item" style={{ cursor: 'pointer' }} onClick={() => onNarrativeClick(narrativeId, weekId)}>
+              <li
+                key={weekId}
+                className="classified-item"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onNarrativeClick(narrativeId, weekId)}
+              >
                 <span className="classified-meta">{weekName}</span>
                 <div className="classified-title clickable-title" style={{ fontSize: '1rem' }}>
                   {display.weekHeadlines[weekId] ?? display.name}
@@ -117,9 +139,19 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
           </ul>
 
           <h3 className="hl-pink" style={{ display: 'inline-block' }}>Creator Risk Monitor</h3>
-          <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>Automated toxicity and misinformation tracking for this specific trend.</p>
+          <p style={{ fontSize: '0.9rem', marginTop: '10px' }}>
+            Automated toxicity and misinformation tracking for this specific trend.
+          </p>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px', fontFamily: "'Courier Prime', monospace", fontSize: '0.85rem' }}>
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              marginTop: '15px',
+              fontFamily: "'Courier Prime', monospace",
+              fontSize: '0.85rem',
+            }}
+          >
             <thead>
               <tr style={{ borderBottom: '2px solid var(--ink-heavy)', textAlign: 'left' }}>
                 <th style={{ padding: '10px 0' }}>CHANNEL ID</th>
@@ -133,7 +165,9 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
             </thead>
             <tbody>
               {display.creatorRisks.map((risk, idx) => {
-                const youtubeHandle = risk.channelId.startsWith('@') ? risk.channelId : `@${risk.channelId}`;
+                const youtubeHandle = risk.channelId.startsWith('@')
+                  ? risk.channelId
+                  : `@${risk.channelId}`;
                 return (
                   <tr key={idx} style={{ borderBottom: '1px dotted var(--ink-heavy)' }}>
                     <td style={{ padding: '10px 0' }}>
@@ -147,10 +181,7 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
                         {risk.channelId}
                       </a>
                     </td>
-                    <td
-                      style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal', cursor: 'help' }}
-                      title={`Risk score: ${risk.score.toFixed(2)} — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
-                    >
+                    <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
                       {risk.score.toFixed(2)} [{risk.riskLevel}]
                     </td>
                   </tr>
@@ -158,7 +189,14 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
               })}
               {display.creatorRisks.length === 0 && (
                 <tr>
-                  <td colSpan={2} style={{ padding: '10px 0', fontStyle: 'italic', color: 'var(--ink-faded)' }}>
+                  <td
+                    colSpan={2}
+                    style={{
+                      padding: '10px 0',
+                      fontStyle: 'italic',
+                      color: 'var(--ink-faded)',
+                    }}
+                  >
                     {fullTrend ? 'No high-risk creators detected.' : 'Loading...'}
                   </td>
                 </tr>

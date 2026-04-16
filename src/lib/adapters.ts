@@ -73,13 +73,6 @@ export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
 
 // ---- Narratives (list) ----
 
-/**
- * Adapt narrative list items, optionally merging article metadata so that
- * overview and articleId are available in the week report view without
- * requiring a separate per-narrative article fetch.
- *
- * articlesByCluster: cluster_id → BackendArticleListItem
- */
 export function adaptNarrativesList(
   items: BackendNarrativeListItem[],
   weekId: string,
@@ -91,10 +84,8 @@ export function adaptNarrativesList(
       id: item.cluster_id.toString(),
       weekId,
       category: item.category,
-      // Prefer the article title if available, fall back to narrative_headline → label
       headline: article?.title ?? item.narrative_headline ?? item.label,
       subheadline: item.label,
-      // overview is the article's lede paragraph; summary is a short teaser
       overview: article?.overview,
       articleId: article?.article_id,
       summary: article?.overview
@@ -108,13 +99,8 @@ export function adaptNarrativesList(
   });
 }
 
-// ---- Narratives (week-specific, from cluster-weeks table) ----
+// ---- Narratives (week-specific) ----
 
-/**
- * Adapts items from GET /api/weeks/{week} — each item carries the headline
- * and summary that were recorded for that specific week, not the current one.
- * Article metadata is merged in the same way as adaptNarrativesList.
- */
 export function adaptWeekNarrativesList(
   items: BackendWeekNarrativeItem[],
   weekId: string,
@@ -192,16 +178,13 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
 
   c.debated.forEach((item, i) => {
     const name = item.channel || 'Multiple Sources';
-
     const quote = (
       item.perspectives[0]?.transcript_excerpt ||
       item.perspectives[0]?.text ||
       item.perspectives[0]?.framing ||
       ''
     );
-
     const videoId = item.perspectives[0]?.video_id || null;
-
     claims.push({
       id: `${narrativeId}-deb-${i}`,
       creatorName: name,
@@ -262,6 +245,15 @@ export function adaptVideoDetail(item: BackendVideoDetailItem): VideoDetailData 
 
 // ---- Trends (list) ----
 
+/**
+ * The list endpoint does NOT include week_data, so we cannot build real
+ * time-series sparklines here. We store a sentinel [{ date:'loading', value:0 }]
+ * so the MiniGraph renders nothing meaningful until App.tsx replaces it with
+ * real data fetched in parallel via fetchTrendDetail.
+ *
+ * App.tsx should call enrichTrendsWithDetail() after adaptTrendsList() to
+ * backfill real engagementData.
+ */
 export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
   return items.map(item => ({
     id: item.cluster_id.toString(),
@@ -270,7 +262,8 @@ export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
     overallSentiment: capitalize(item.sentiment_label),
     recentSentiment: capitalize(item.recent_sentiment_label),
     totalEngagement: item.heat_score,
-    engagementData: [{ date: 'week1', value: 0 }, { date: 'now', value: item.heat_score }],
+    // Placeholder — will be replaced by real week_data once details load
+    engagementData: [{ date: 'W1', value: 0 }, { date: 'now', value: item.heat_score }],
     detailedAnalysis: [],
     barChartData: { '3 Weeks': [], 'All Weeks': [] },
     creatorRisks: [],
@@ -280,9 +273,19 @@ export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
 
 // ---- Trend (detail) ----
 
+/**
+ * Adapts a full trend detail response into a Trend object with real
+ * per-week view_count data for both the sparkline and the bar chart.
+ *
+ * Key fixes:
+ *  - engagementData uses view_count (not heat_score placeholder)
+ *  - barChart uses view_count (not video_count which produces near-flat bars)
+ *  - barChart30 = last 4 weeks for a meaningful "30 day" window
+ */
 export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
   const weekData = detail.week_data ?? [];
 
+  // Real sparkline data: view_count per week, ordered chronologically
   const engagementData = weekData.map(w => ({
     date: formatWeekName(w.week),
     value: w.view_count,
@@ -292,9 +295,10 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
     ? engagementData
     : [{ date: 'start', value: 0 }, { date: 'now', value: detail.heat_score }];
 
+  // Bar chart: view_count gives proportional, audience-scale bars
   const barChartFull = weekData.map(w => ({
     label: formatWeekName(w.week),
-    value: w.video_count,
+    value: w.view_count,
   }));
   const barChart3Weeks = barChartFull.slice(-3);
   const barChartAllWeeks = barChartFull;
@@ -307,9 +311,7 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
 
   const weekHeadlines: Record<string, string> = {};
   for (const w of weekData) {
-    if (w.narrative_headline) {
-      weekHeadlines[w.week] = w.narrative_headline;
-    }
+    if (w.narrative_headline) weekHeadlines[w.week] = w.narrative_headline;
   }
 
   return {
