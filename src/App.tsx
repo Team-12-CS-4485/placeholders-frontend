@@ -13,13 +13,14 @@ import {
   fetchWeeks,
   fetchWeekNarratives,
   fetchTrendsList,
+  fetchTrendDetail,
   fetchArticles,
 } from './services/api';
 import {
   adaptWeeks,
   adaptWeekNarrativesList,
   adaptTrendsList,
-  //adaptTrendDetail as _adaptTrendDetail,
+  adaptTrendDetail,
   generateTrendAlerts,
   parseWeekNumber,
 } from './lib/adapters';
@@ -28,7 +29,7 @@ import type { WeekData, Trend, TrendAlert, Narrative } from './types';
 import type { BackendArticleListItem } from './services/api';
 
 const WEEKS_CACHE_KEY = 'cap-weeks-v2';
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface WeeksCache {
   weeks: WeekData[];
@@ -91,10 +92,6 @@ function App() {
   const getNarrativesForWeek = (weekId: string): Narrative[] =>
     narrativesByWeek[weekId] ?? [];
 
-  /**
-   * Fetches both narratives and articles for a week in parallel so that
-   * article overviews and titles are available in the week report view.
-   */
   async function loadNarrativesForWeek(weekId: string): Promise<Narrative[]> {
     if (narrativesByWeek[weekId]) return narrativesByWeek[weekId];
 
@@ -107,7 +104,6 @@ function App() {
         : Promise.resolve({ articles: [] as BackendArticleListItem[], total: 0 }),
     ]);
 
-    // Build a fast cluster_id → article lookup
     const articlesByCluster = new Map<number, BackendArticleListItem>(
       articlesRes.articles.map((a: BackendArticleListItem) => [a.cluster_id, a]),
     );
@@ -125,7 +121,6 @@ function App() {
     return narratives;
   }
 
-  // ── Initial load / refresh ──────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
       const currentWeekId = getCurrentWeekId();
@@ -149,6 +144,35 @@ function App() {
       setWeeks(adaptedWeeks);
       setTrends(adaptedTrends);
       setTrendAlerts(alerts);
+
+      // ── Backfill real week_data for every trend sparkline ─────────────────
+      // The list endpoint has no week_data, so sparklines start as a flat
+      // placeholder. We fire fetchTrendDetail() for each trend in parallel
+      // and merge real view_count per-week data into state as each resolves.
+      trendsRes.trends.forEach(item => {
+        fetchTrendDetail(item.cluster_id)
+          .then(detail => {
+            const enriched = adaptTrendDetail(detail);
+            setTrends(prev =>
+              prev.map(t =>
+                t.id === enriched.id
+                  ? {
+                      ...t,
+                      engagementData: enriched.engagementData,
+                      barChartData: enriched.barChartData,
+                      detailedAnalysis: enriched.detailedAnalysis,
+                      creatorRisks: enriched.creatorRisks,
+                      weekHeadlines: enriched.weekHeadlines,
+                    }
+                  : t,
+              ),
+            );
+          })
+          .catch(() => {
+            // Non-fatal: sparkline keeps placeholder until next refresh
+          });
+      });
+      // ─────────────────────────────────────────────────────────────────────
 
       if (adaptedWeeks.length > 0) {
         const currentWeek =
@@ -188,7 +212,6 @@ function App() {
     setRefreshKey(k => k + 1);
   };
 
-  // ── Tab management ──────────────────────────────────────────────────────────
   const handleCloseTab = (tabId: string) => {
     const tabsToRemove = new Set([
       tabId,
