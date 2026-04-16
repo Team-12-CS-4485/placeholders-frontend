@@ -186,7 +186,7 @@ export const Masthead: React.FC<MastheadProps> = ({
         </div>
       )}
       <h1>Newsify</h1>
-      <div style={{ fontStyle: 'italic', fontSize: '1.1rem', marginTop: '-5px' }}>
+      <div className="masthead-tagline">
         The Investigative Archive - YouTube Intelligence
       </div>
       <div className="sub-meta">
