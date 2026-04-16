@@ -271,12 +271,19 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
           <h3
             style={{
               borderBottom: '1px solid var(--ink-heavy)',
-              marginBottom: '15px',
+              marginBottom: '8px',
               paddingBottom: '5px',
             }}
           >
             Extracted Claims
           </h3>
+          <p
+            className="font-mono"
+            style={{ fontSize: '0.68rem', color: 'var(--ink-faded)', marginBottom: '12px' }}
+            title="Risk score reflects misinformation potential based on claim verification. HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4"
+          >
+            RISK: <span style={{ color: '#d90000' }}>HIGH ≥ 0.8</span> · <span style={{ color: '#b37700' }}>MED ≥ 0.4</span> · <span style={{ color: '#006600' }}>LOW &lt; 0.4</span>
+          </p>
 
           {claimsLoading && (
             <p style={{ fontStyle: 'italic', color: 'var(--ink-faded)', fontSize: '0.9rem' }}>
@@ -314,7 +321,10 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
                     {claim.creatorName}
                   </a>
 
-                  <span className={`risk-badge ${getRiskClass(claim.riskScore)}`}>
+                  <span
+                    className={`risk-badge ${getRiskClass(claim.riskScore)}`}
+                    title={`Risk score: ${claim.riskScore.toFixed(2)} — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
+                  >
                     {claim.riskScore.toFixed(2)}
                   </span>
                 </div>

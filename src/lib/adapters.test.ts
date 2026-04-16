@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   adaptWeeks,
   adaptNarrativesList,
+  adaptWeekNarrativesList,
   adaptNarrativeDetail,
   adaptClaims,
   adaptTrendsList,
   adaptTrendDetail,
+  adaptVideoList,
   generateTrendAlerts,
 } from './adapters';
 import type {
@@ -15,6 +17,8 @@ import type {
   BackendNarrativeClaims,
   BackendTrendListItem,
   BackendTrendDetail,
+  BackendVideoListResponse,
+  BackendWeekNarrativeItem,
 } from '../services/api';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -353,15 +357,16 @@ describe('adaptTrendDetail', () => {
     expect(result.engagementData[0].date).toBe('Week 1');
   });
 
-  it('maps all week_data entries to barChartData 90 Days', () => {
+  it('maps all week_data entries to barChartData All Weeks', () => {
     const result = adaptTrendDetail(TREND_DETAIL);
-    expect(result.barChartData['90 Days']).toHaveLength(3);
+    expect(result.barChartData['All Weeks']).toHaveLength(3);
   });
 
-  it('maps only the last 2 week_data entries to barChartData 30 Days', () => {
+  it('maps only the last 3 week_data entries to barChartData 3 Weeks', () => {
     const result = adaptTrendDetail(TREND_DETAIL);
-    expect(result.barChartData['30 Days']).toHaveLength(2);
-    expect(result.barChartData['30 Days'][0].label).toBe('Week 2');
+    // TREND_DETAIL has exactly 3 weeks, so slice(-3) returns all three
+    expect(result.barChartData['3 Weeks']).toHaveLength(3);
+    expect(result.barChartData['3 Weeks'][0].label).toBe('Week 1');
   });
 
   it('maps top_claims to detailedAnalysis', () => {
@@ -429,5 +434,103 @@ describe('generateTrendAlerts', () => {
     };
     const result = generateTrendAlerts([item]);
     expect(result).toHaveLength(0);
+  });
+});
+
+// ── adaptVideoList ────────────────────────────────────────────────────────────
+
+const VIDEO_LIST_RESPONSE: BackendVideoListResponse = {
+  items: [
+    {
+      video_id: 'abc123',
+      channel: 'TestChannel',
+      title: 'Test Video',
+      published_at: '2026-03-01T00:00:00Z',
+      view_count: 1_000_000,
+      like_count: 50_000,
+      comment_count: 2_500,
+      thumbnail_url: 'https://img.example.com/thumb.jpg',
+      sentiment: 'positive',
+      cluster_label: 'Test Cluster',
+    },
+  ],
+  total_returned: 1,
+};
+
+describe('adaptVideoList', () => {
+  it('maps video_id to id', () => {
+    const result = adaptVideoList(VIDEO_LIST_RESPONSE);
+    expect(result[0].id).toBe('abc123');
+  });
+
+  it('maps view_count to viewCount', () => {
+    const result = adaptVideoList(VIDEO_LIST_RESPONSE);
+    expect(result[0].viewCount).toBe(1_000_000);
+  });
+
+  it('maps like_count to likeCount', () => {
+    const result = adaptVideoList(VIDEO_LIST_RESPONSE);
+    expect(result[0].likeCount).toBe(50_000);
+  });
+
+  it('maps comment_count to commentCount', () => {
+    const result = adaptVideoList(VIDEO_LIST_RESPONSE);
+    expect(result[0].commentCount).toBe(2_500);
+  });
+
+  it('falls back to empty string for null thumbnail_url', () => {
+    const item = { ...VIDEO_LIST_RESPONSE.items[0], thumbnail_url: null };
+    const result = adaptVideoList({ items: [item], total_returned: 1 });
+    expect(result[0].thumbnailUrl).toBe('');
+  });
+
+  it('falls back to "Uncategorized" for missing cluster_label', () => {
+    const item = { ...VIDEO_LIST_RESPONSE.items[0], cluster_label: undefined };
+    const result = adaptVideoList({ items: [item], total_returned: 1 });
+    expect(result[0].clusterLabel).toBe('Uncategorized');
+  });
+});
+
+// ── adaptWeekNarrativesList ───────────────────────────────────────────────────
+
+const WEEK_NARRATIVE_ITEM: BackendWeekNarrativeItem = {
+  cluster_id: 9,
+  cluster_label: 'Iran-Israel Energy Crisis',
+  narrative_headline: 'US-Israel Strikes Trigger Energy Crisis',
+  narrative_summary: 'Following hostilities, 32 countries released oil reserves.',
+  week_overview: null,
+  top_topics: ['Middle East', 'Oil Markets'],
+  top_claims: ['Claim one.'],
+  video_count: 16,
+  view_count: 776779,
+  breaking_count: 14,
+  dominant_sentiment: 'negative',
+};
+
+describe('adaptWeekNarrativesList', () => {
+  it('maps cluster_id to string id', () => {
+    const result = adaptWeekNarrativesList([WEEK_NARRATIVE_ITEM], 'week1');
+    expect(result[0].id).toBe('9');
+  });
+
+  it('maps view_count to viewCount', () => {
+    const result = adaptWeekNarrativesList([WEEK_NARRATIVE_ITEM], 'week1');
+    expect(result[0].viewCount).toBe(776779);
+  });
+
+  it('uses narrative_headline when present', () => {
+    const result = adaptWeekNarrativesList([WEEK_NARRATIVE_ITEM], 'week1');
+    expect(result[0].headline).toBe('US-Israel Strikes Trigger Energy Crisis');
+  });
+
+  it('falls back to cluster_label when narrative_headline is null', () => {
+    const item = { ...WEEK_NARRATIVE_ITEM, narrative_headline: null };
+    const result = adaptWeekNarrativesList([item], 'week1');
+    expect(result[0].headline).toBe('Iran-Israel Energy Crisis');
+  });
+
+  it('uses narrative_summary as summary when no article override', () => {
+    const result = adaptWeekNarrativesList([WEEK_NARRATIVE_ITEM], 'week1');
+    expect(result[0].summary).toContain('32 countries');
   });
 });

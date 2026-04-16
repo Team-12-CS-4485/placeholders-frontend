@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { VideoDetailData } from '../../types';
 import { fetchVideoDetail } from '../../services/api';
+import { formatCount } from '../../lib/weekUtils';
 
 interface VideoDetailProps {
   videoId: string;
@@ -157,19 +158,19 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ videoId, onBack }) => 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
               <div style={{ fontSize: '1.5rem', fontFamily: "'Playfair Display', serif", fontWeight: 'bold' }}>
-                {(video.viewCount / 1000).toFixed(1)}k
+                {formatCount(video.viewCount)}
               </div>
               <div className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--ink-faded)' }}>VIEWS</div>
             </div>
             <div style={{ textAlign: 'center', flex: 1, borderLeft: '1px solid var(--ink-heavy)', borderRight: '1px solid var(--ink-heavy)' }}>
               <div style={{ fontSize: '1.5rem', fontFamily: "'Playfair Display', serif", fontWeight: 'bold' }}>
-                {(video.likeCount / 1000).toFixed(1)}k
+                {formatCount(video.likeCount)}
               </div>
               <div className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--ink-faded)' }}>LIKES</div>
             </div>
             <div style={{ textAlign: 'center', flex: 1 }}>
               <div style={{ fontSize: '1.5rem', fontFamily: "'Playfair Display', serif", fontWeight: 'bold' }}>
-                {video.commentCount}
+                {formatCount(video.commentCount)}
               </div>
               <div className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--ink-faded)' }}>COMMENTS</div>
             </div>

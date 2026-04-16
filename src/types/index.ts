@@ -17,6 +17,8 @@ export interface Video {
   title: string;
   publishedAt: string;
   viewCount: number;
+  likeCount: number;
+  commentCount: number;
   thumbnailUrl: string;
   sentiment: string;
   clusterLabel: string;
@@ -55,6 +57,8 @@ export interface Narrative {
   pageNumber: number;
   claims: Claim[];
   trendIds: string[];
+  /** Total views for this narrative cluster in its week — used for heat-based ordering */
+  viewCount?: number;
 }
 
 export interface Trend {
@@ -67,8 +71,8 @@ export interface Trend {
   totalEngagement: number;
   detailedAnalysis: React.ReactNode[];
   barChartData: {
-    '30 Days': { label: string; value: number }[];
-    '90 Days': { label: string; value: number }[];
+    '3 Weeks': { label: string; value: number }[];
+    'All Weeks': { label: string; value: number }[];
   };
   creatorRisks: CreatorRisk[];
   weekHeadlines: Record<string, string>;

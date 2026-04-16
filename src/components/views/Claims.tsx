@@ -26,6 +26,7 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
             textDecoration: riskLevel === 'HIGH' ? 'line-through' : 'none',
             color: riskLevel === 'HIGH' ? 'var(--ink-faded)' : riskLevel === 'MED' ? '#b85c00' : 'inherit',
           }}
+          title={`Risk: ${riskLevel} (${claim.riskScore.toFixed(2)}) — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
         >
           "{claim.extractedClaim}"
         </span>{' '}

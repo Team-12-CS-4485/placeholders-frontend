@@ -11,7 +11,7 @@ interface TrendDetailProps {
 
 export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarrativeClick }) => {
   const [fullTrend, setFullTrend] = useState<Trend | null>(null);
-  const [chartRange, setChartRange] = useState<'30 Days' | '90 Days'>('30 Days');
+  const [chartRange, setChartRange] = useState<'3 Weeks' | 'All Weeks'>('3 Weeks');
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +29,7 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
   // shares the same cluster_id as the trend, so the narrative id = trend.id
   const contributingWeeks = fullTrend
     ? Object.keys(
-        fullTrend.barChartData['90 Days'].reduce((acc, d) => {
+        fullTrend.barChartData['All Weeks'].reduce((acc, d) => {
           acc[d.label] = d.value;
           return acc;
         }, {} as Record<string, number>)
@@ -67,16 +67,16 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
             <h3>Engagement Volume</h3>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
-                onClick={() => setChartRange('30 Days')}
-                style={{ fontWeight: chartRange === '30 Days' ? 'bold' : 'normal', background: 'none', border: '1px solid var(--ink-heavy)', padding: '2px 8px', cursor: 'pointer' }}
+                onClick={() => setChartRange('3 Weeks')}
+                style={{ fontWeight: chartRange === '3 Weeks' ? 'bold' : 'normal', background: 'none', border: '1px solid var(--ink-heavy)', padding: '2px 8px', cursor: 'pointer' }}
               >
-                30 Days
+                3 Weeks
               </button>
               <button
-                onClick={() => setChartRange('90 Days')}
-                style={{ fontWeight: chartRange === '90 Days' ? 'bold' : 'normal', background: 'none', border: '1px solid var(--ink-heavy)', padding: '2px 8px', cursor: 'pointer' }}
+                onClick={() => setChartRange('All Weeks')}
+                style={{ fontWeight: chartRange === 'All Weeks' ? 'bold' : 'normal', background: 'none', border: '1px solid var(--ink-heavy)', padding: '2px 8px', cursor: 'pointer' }}
               >
-                90 Days
+                All Weeks
               </button>
             </div>
           </div>
@@ -123,7 +123,12 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
             <thead>
               <tr style={{ borderBottom: '2px solid var(--ink-heavy)', textAlign: 'left' }}>
                 <th style={{ padding: '10px 0' }}>CHANNEL ID</th>
-                <th style={{ padding: '10px 0' }}>RISK SCORE</th>
+                <th
+                  style={{ padding: '10px 0', cursor: 'help' }}
+                  title="Risk score reflects misinformation potential based on claim verification. HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4"
+                >
+                  RISK SCORE (?)
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -142,7 +147,10 @@ export const TrendDetail: React.FC<TrendDetailProps> = ({ trend, onBack, onNarra
                         {risk.channelId}
                       </a>
                     </td>
-                    <td style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal' }}>
+                    <td
+                      style={{ padding: '10px 0', color: risk.riskLevel === 'HIGH' ? '#d90000' : 'inherit', fontWeight: risk.riskLevel === 'HIGH' ? 'bold' : 'normal', cursor: 'help' }}
+                      title={`Risk score: ${risk.score.toFixed(2)} — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
+                    >
                       {risk.score.toFixed(2)} [{risk.riskLevel}]
                     </td>
                   </tr>

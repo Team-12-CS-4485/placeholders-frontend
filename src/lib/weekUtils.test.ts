@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weekToDateRange, formatViews, WEEK_1_START } from './weekUtils';
+import { weekToDateRange, formatViews, formatCount, WEEK_1_START } from './weekUtils';
 
 describe('weekToDateRange', () => {
   it('returns empty string for unrecognized formats', () => {
@@ -40,5 +40,31 @@ describe('formatViews', () => {
 
   it('returns plain number below 1000', () => {
     expect(formatViews(500)).toBe('500 views');
+  });
+});
+
+describe('formatCount', () => {
+  it('formats millions with one decimal place and no unit label', () => {
+    expect(formatCount(1_500_000)).toBe('1.5M');
+  });
+
+  it('formats thousands as rounded K with no unit label', () => {
+    expect(formatCount(45_000)).toBe('45K');
+  });
+
+  it('returns plain number below 1000', () => {
+    expect(formatCount(500)).toBe('500');
+  });
+
+  it('handles exactly 1000 as 1K', () => {
+    expect(formatCount(1_000)).toBe('1K');
+  });
+
+  it('handles exactly 1000000 as 1.0M', () => {
+    expect(formatCount(1_000_000)).toBe('1.0M');
+  });
+
+  it('handles 0', () => {
+    expect(formatCount(0)).toBe('0');
   });
 });

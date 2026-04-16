@@ -10,7 +10,14 @@ interface WeekReportProps {
 }
 
 export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore, onTrendClick }) => {
-  const { items: narrativesWithLayout } = week.narratives.reduce(
+  // Sort by heat (viewCount) descending so the hottest story gets the largest column.
+  // Fall back to original order when viewCount is unavailable (e.g. older data).
+  const hasHeatData = week.narratives.some(n => (n.viewCount ?? 0) > 0);
+  const orderedNarratives = hasHeatData
+    ? [...week.narratives].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
+    : week.narratives;
+
+  const { items: narrativesWithLayout } = orderedNarratives.reduce(
     (acc, narrative, index) => {
       const span = index === 0 ? 8 : 4;
       const isNewLine = acc.currentSpan % 12 === 0;
@@ -23,7 +30,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
     {
       currentSpan: 0,
       items: [] as Array<{
-        narrative: WeekData['narratives'][number];
+        narrative: (typeof orderedNarratives)[number];
         index: number;
         span: number;
         isNewLine: boolean;
