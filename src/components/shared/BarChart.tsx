@@ -122,7 +122,7 @@ export const BarChart: React.FC<BarChartProps> = ({
             }}
           >
             {data.map((d, i) => {
-              const bh = barH(d.val ?? d.value);
+              const bh = barH(d.value);
               const isHovered = hoveredIdx === i;
               const slotW = `${100 / data.length}%`;
               const gapPct = BAR_GAP * 50; // half-gap on each side as % of slot
@@ -170,7 +170,7 @@ export const BarChart: React.FC<BarChartProps> = ({
                           pointerEvents: 'none',
                         }}
                       >
-                        {formatTick(d.val ?? d.value)}
+                        {formatTick(d.value)}
                       </div>
                     )}
                   </div>

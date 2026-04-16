@@ -2,15 +2,19 @@ import React, { useState, useEffect } from 'react';
 import type { Video } from '../../types';
 import { fetchVideosList } from '../../services/api';
 import { adaptVideoList } from '../../lib/adapters';
+import { formatCount } from '../../lib/weekUtils';
 
 interface VideosProps {
   onVideoClick: (videoId: string) => void;
 }
 
+type SortOrder = 'most-viewed' | 'most-engaging' | 'most-recent' | 'by-narrative';
+
 export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [sortOrder, setSortOrder] = useState<SortOrder>('most-viewed');
+
   // Pagination state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -46,6 +50,19 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
     }
   };
 
+  const sortedVideos = [...videos].sort((a, b) => {
+    switch (sortOrder) {
+      case 'most-viewed':
+        return b.viewCount - a.viewCount;
+      case 'most-engaging':
+        return (b.viewCount + b.likeCount + b.commentCount) - (a.viewCount + a.likeCount + a.commentCount);
+      case 'most-recent':
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      case 'by-narrative':
+        return a.clusterLabel.localeCompare(b.clusterLabel);
+    }
+  });
+
   if (isLoading) {
     return (
       <section className="view-section">
@@ -58,13 +75,26 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
 
   return (
     <section className="view-section">
-      <div className="masthead" style={{ borderBottom: '1px solid var(--ink-heavy)', marginBottom: '20px', paddingBottom: '5px' }}>
+      <div className="masthead" style={{ position: 'relative', borderBottom: '1px solid var(--ink-heavy)', marginBottom: '20px', paddingBottom: '5px', textAlign: 'center' }}>
         <h2>Video Feed</h2>
         <p className="font-mono" style={{ fontSize: '0.9rem' }}>Raw Ingested Source Material</p>
+        <div style={{ position: 'absolute', right: 0, bottom: '5px' }}>
+          <select
+            className="font-mono"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            style={{ padding: '5px', backgroundColor: 'var(--bg-paper)', border: '1px solid var(--ink-heavy)' }}
+          >
+            <option value="most-viewed">Sort: Most Viewed</option>
+            <option value="most-engaging">Sort: Most Engaging</option>
+            <option value="most-recent">Sort: Most Recent</option>
+            <option value="by-narrative">Sort: By Narrative</option>
+          </select>
+        </div>
       </div>
 
       <div className="newspaper-grid">
-        {videos.map((video, idx) => (
+        {sortedVideos.map((video, idx) => (
           <div key={video.id} className={`col-span-4 article-block ${idx % 3 !== 0 ? 'vertical-divider' : ''}`} style={{ marginBottom: '30px' }}>
             <div style={{ position: 'relative', cursor: 'pointer', border: '1px solid var(--ink-heavy)', padding: '5px', backgroundColor: 'var(--bg-aged)' }} onClick={() => onVideoClick(video.id)}>
               {video.thumbnailUrl ? (
@@ -73,7 +103,7 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
                 <div style={{ width: '100%', paddingTop: '56.25%', backgroundColor: 'var(--ink-heavy)' }} />
               )}
               <div style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'var(--bg-paper)', padding: '2px 6px', border: '1px solid var(--ink-heavy)', fontSize: '0.7rem' }} className="font-mono">
-                {video.viewCount.toLocaleString()} views
+                {formatCount(video.viewCount)} views
               </div>
             </div>
             
@@ -96,7 +126,7 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick }) => {
             </div>
           </div>
         ))}
-        {videos.length === 0 && (
+        {sortedVideos.length === 0 && (
           <p className="font-mono" style={{ color: 'var(--ink-faded)', gridColumn: 'span 12' }}>No videos indexed.</p>
         )}
       </div>

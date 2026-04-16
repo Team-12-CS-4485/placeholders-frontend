@@ -125,6 +125,7 @@ export function adaptWeekNarrativesList(
       pageNumber: index + 1,
       claims: [],
       trendIds: [item.cluster_id.toString()],
+      viewCount: item.view_count,
     };
   });
 }
@@ -224,6 +225,8 @@ export function adaptVideoList(res: BackendVideoListResponse): Video[] {
     title: item.title,
     publishedAt: item.published_at,
     viewCount: item.view_count,
+    likeCount: item.like_count,
+    commentCount: item.comment_count,
     thumbnailUrl: item.thumbnail_url || '',
     sentiment: item.sentiment || 'neutral',
     clusterLabel: item.cluster_label || 'Uncategorized',
@@ -265,7 +268,7 @@ export function adaptTrendsList(items: BackendTrendListItem[]): Trend[] {
     // Placeholder — will be replaced by real week_data once details load
     engagementData: [{ date: 'W1', value: 0 }, { date: 'now', value: item.heat_score }],
     detailedAnalysis: [],
-    barChartData: { '30 Days': [], '90 Days': [] },
+    barChartData: { '3 Weeks': [], 'All Weeks': [] },
     creatorRisks: [],
     weekHeadlines: {},
   }));
@@ -300,7 +303,8 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
     label: formatWeekName(w.week),
     value: w.view_count,
   }));
-  const barChart30 = barChartFull.length > 4 ? barChartFull.slice(-4) : barChartFull;
+  const barChart3Weeks = barChartFull.slice(-3);
+  const barChartAllWeeks = barChartFull;
 
   const creatorRisks: CreatorRisk[] = (detail.creator_risk ?? []).map(c => ({
     channelId: c.name,
@@ -323,8 +327,8 @@ export function adaptTrendDetail(detail: BackendTrendDetail): Trend {
     engagementData: safeEngagementData,
     detailedAnalysis: detail.top_claims ?? detail.top_topics ?? [],
     barChartData: {
-      '30 Days': barChart30.length ? barChart30 : barChartFull,
-      '90 Days': barChartFull.length ? barChartFull : [{ label: 'N/A', value: 0 }],
+      '3 Weeks': barChart3Weeks.length ? barChart3Weeks : barChartAllWeeks,
+      'All Weeks': barChartAllWeeks.length ? barChartAllWeeks : [{ label: 'N/A', value: 0 }],
     },
     creatorRisks,
     weekHeadlines,
