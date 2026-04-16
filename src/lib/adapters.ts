@@ -165,6 +165,7 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
     const name = item.channel || item.sources[0] || 'Unknown';
     claims.push({
       id: `${narrativeId}-con-${i}`,
+      claimType: 'consensus',
       creatorName: name,
       creatorInitials: getInitials(name),
       riskScore: item.risk_score,
@@ -186,6 +187,7 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
     const videoId = item.perspectives[0]?.video_id || null;
     claims.push({
       id: `${narrativeId}-deb-${i}`,
+      claimType: 'debated',
       creatorName: name,
       creatorInitials: getInitials(name),
       riskScore: item.risk_score,
@@ -199,6 +201,7 @@ export function adaptClaims(res: BackendNarrativeClaims, narrativeId: string): C
   c.unique.forEach((item, i) => {
     claims.push({
       id: `${narrativeId}-unq-${i}`,
+      claimType: 'unique',
       creatorName: item.channel,
       creatorInitials: getInitials(item.channel),
       riskScore: item.risk_score,

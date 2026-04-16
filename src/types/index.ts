@@ -2,6 +2,7 @@ import React from 'react';
 
 export interface Claim {
   id: string;
+  claimType: 'consensus' | 'debated' | 'unique';
   creatorName: string;
   creatorInitials: string;
   riskScore: number;
