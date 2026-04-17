@@ -349,6 +349,10 @@ h1, h2, h3, h4, h5 {
   margin-left: -1px;
 }
 
+.tab-group .tab:last-child {
+  margin-right: 0.5px;
+}
+
 .tab-label-text {
   white-space: nowrap;
   overflow: hidden;
