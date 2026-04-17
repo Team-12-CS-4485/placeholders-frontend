@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import type { VideoDetailData } from '../../types';
 import { fetchVideoDetail } from '../../services/api';
 import { formatCount } from '../../lib/weekUtils';
@@ -6,19 +6,29 @@ import { formatCount } from '../../lib/weekUtils';
 interface VideoDetailProps {
   videoId: string;
   onBack: () => void;
+  onVideoCached?: (video: VideoDetailData) => void;
 }
 
-export const VideoDetail: React.FC<VideoDetailProps> = ({ videoId, onBack }) => {
+export const VideoDetail: React.FC<VideoDetailProps> = ({
+  videoId,
+  onBack,
+  onVideoCached,
+}) => {
   const [video, setVideo] = useState<VideoDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const emitVideoCached = useEffectEvent((detail: VideoDetailData) => {
+    onVideoCached?.(detail);
+  });
 
   useEffect(() => {
     let cancelled = false;
     fetchVideoDetail(videoId).then(res => {
       import('../../lib/adapters').then(({ adaptVideoDetail }) => {
         if (!cancelled) {
-          setVideo(adaptVideoDetail(res));
+          const adapted = adaptVideoDetail(res);
+          setVideo(adapted);
           setIsLoading(false);
+          emitVideoCached(adapted);
         }
       });
     }).catch(() => {

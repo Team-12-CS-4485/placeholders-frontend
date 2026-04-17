@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import type { Claim, Narrative, WeekData } from '../../types';
 import { fetchNarrativesList, fetchNarrativeClaims } from '../../services/api';
 import { adaptNarrativesList, adaptClaims } from '../../lib/adapters';
@@ -6,6 +6,14 @@ import { adaptNarrativesList, adaptClaims } from '../../lib/adapters';
 interface ClaimsProps {
   currentWeekId: string;
   weeks: WeekData[];
+  onClaimsCached?: (
+    entries: Array<{
+      weekId: string;
+      narrativeId: string;
+      narrativeTitle: string;
+      claims: Claim[];
+    }>,
+  ) => void;
 }
 
 const getRiskLevel = (score: number): 'HIGH' | 'MED' | 'LOW' => {
@@ -91,10 +99,26 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
   );
 };
 
-export const Claims: React.FC<ClaimsProps> = ({ currentWeekId, weeks }) => {
+export const Claims: React.FC<ClaimsProps> = ({
+  currentWeekId,
+  weeks,
+  onClaimsCached,
+}) => {
   const [selectedWeekId, setSelectedWeekId] = useState(currentWeekId);
   const [narratives, setNarratives] = useState<Narrative[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const emitClaimsCached = useEffectEvent(
+    (
+      entries: Array<{
+        weekId: string;
+        narrativeId: string;
+        narrativeTitle: string;
+        claims: Claim[];
+      }>,
+    ) => {
+      onClaimsCached?.(entries);
+    },
+  );
 
   // Keep selectedWeekId in sync if parent changes the current week
   useEffect(() => {
@@ -129,6 +153,14 @@ export const Claims: React.FC<ClaimsProps> = ({ currentWeekId, weeks }) => {
       }));
 
       setNarratives(populated);
+      emitClaimsCached(
+        populated.map((narrative: Narrative) => ({
+          weekId: selectedWeekId,
+          narrativeId: narrative.id,
+          narrativeTitle: narrative.headline,
+          claims: narrative.claims,
+        })),
+      );
       setIsLoading(false);
     }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Masthead } from './components/layout/Masthead';
 import { FolderTabs } from './components/layout/FolderTabs';
 import { WeekReport } from './components/views/WeekReport';
@@ -15,6 +15,8 @@ import {
   fetchTrendsList,
   fetchTrendDetail,
   fetchArticles,
+  type BackendArticleDetail,
+  type BackendArticleListItem,
 } from './services/api';
 import {
   adaptWeeks,
@@ -25,15 +27,42 @@ import {
   parseWeekNumber,
 } from './lib/adapters';
 import { getCurrentWeekId } from './lib/weekUtils';
-import type { WeekData, Trend, TrendAlert, Narrative } from './types';
-import type { BackendArticleListItem } from './services/api';
+import {
+  reactNodeToText,
+  searchDocuments,
+  type SearchDocument,
+  type SearchMatch,
+} from './lib/search';
+import type {
+  Claim,
+  Narrative,
+  Trend,
+  TrendAlert,
+  Video,
+  VideoDetailData,
+  WeekData,
+} from './types';
 
 const WEEKS_CACHE_KEY = 'cap-weeks-v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ARTICLE_INDEX_LIMIT = 1000;
 
 interface WeeksCache {
   weeks: WeekData[];
   savedAt: number;
+}
+
+interface CachedNarrativeArticle {
+  weekId: string;
+  narrativeId: string;
+  article: BackendArticleDetail;
+}
+
+interface CachedNarrativeClaims {
+  weekId: string;
+  narrativeId: string;
+  narrativeTitle: string;
+  claims: Claim[];
 }
 
 function readWeeksCache(): WeeksCache | null {
@@ -62,8 +91,41 @@ function saveWeeksCache(weeks: WeekData[]): void {
     };
     localStorage.setItem(WEEKS_CACHE_KEY, JSON.stringify(payload));
   } catch {
-    // Ignore — storage unavailable in private browsing
+    // Ignore when storage is unavailable.
   }
+}
+
+function getNarrativeCacheKey(weekId: string, narrativeId: string): string {
+  return `${weekId}:${narrativeId}`;
+}
+
+function getNarrativeTabId(weekId: string, narrativeId: string): string {
+  return `narrative-${weekId}-${narrativeId}`;
+}
+
+function mergeArticleListItems(
+  existing: BackendArticleListItem[],
+  incoming: BackendArticleListItem[],
+): BackendArticleListItem[] {
+  if (incoming.length === 0) return existing;
+
+  const merged = new Map(existing.map(article => [article.article_id, article]));
+  incoming.forEach(article => merged.set(article.article_id, article));
+
+  return Array.from(merged.values()).sort((left, right) =>
+    right.week_number - left.week_number || left.title.localeCompare(right.title),
+  );
+}
+
+function findRootTabId(tabId: string | undefined, tabs: TabData[]): string | undefined {
+  if (!tabId) return undefined;
+
+  let current = tabs.find(tab => tab.id === tabId);
+  while (current?.parentId) {
+    current = tabs.find(tab => tab.id === current?.parentId);
+  }
+
+  return current?.id;
 }
 
 export interface TabData {
@@ -83,29 +145,55 @@ function App() {
   const [trends, setTrends] = useState<Trend[]>([]);
   const [trendAlerts, setTrendAlerts] = useState<TrendAlert[]>([]);
   const [narrativesByWeek, setNarrativesByWeek] = useState<Record<string, Narrative[]>>({});
+  const [articleIndex, setArticleIndex] = useState<BackendArticleListItem[]>([]);
+  const [cachedNarrativeArticles, setCachedNarrativeArticles] = useState<
+    Record<string, CachedNarrativeArticle>
+  >({});
+  const [cachedNarrativeClaims, setCachedNarrativeClaims] = useState<
+    Record<string, CachedNarrativeClaims>
+  >({});
+  const [cachedVideos, setCachedVideos] = useState<Record<string, Video>>({});
+  const [cachedVideoDetails, setCachedVideoDetails] = useState<
+    Record<string, VideoDetailData>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
 
-  const getNarrativesForWeek = (weekId: string): Narrative[] =>
-    narrativesByWeek[weekId] ?? [];
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  async function loadNarrativesForWeek(weekId: string): Promise<Narrative[]> {
+  const getNarrativesForWeek = (weekId: string): Narrative[] => narrativesByWeek[weekId] ?? [];
+
+  async function loadNarrativesForWeek(
+    weekId: string,
+    prefetchedArticles?: BackendArticleListItem[],
+  ): Promise<Narrative[]> {
     if (narrativesByWeek[weekId]) return narrativesByWeek[weekId];
 
     const weekNumber = parseWeekNumber(weekId);
+    const indexedArticles =
+      prefetchedArticles ??
+      (weekNumber !== undefined
+        ? articleIndex.filter(article => article.week_number === weekNumber)
+        : []);
 
     const [narrativesRes, articlesRes] = await Promise.all([
       fetchWeekNarratives(weekId),
       weekNumber !== undefined
-        ? fetchArticles({ week: weekNumber, limit: 200 })
+        ? indexedArticles.length > 0
+          ? Promise.resolve({
+              articles: indexedArticles,
+              total: indexedArticles.length,
+            })
+          : fetchArticles({ week: weekNumber, limit: 200 })
         : Promise.resolve({ articles: [] as BackendArticleListItem[], total: 0 }),
     ]);
 
     const articlesByCluster = new Map<number, BackendArticleListItem>(
-      articlesRes.articles.map((a: BackendArticleListItem) => [a.cluster_id, a]),
+      articlesRes.articles.map(article => [article.cluster_id, article]),
     );
 
     const narratives = adaptWeekNarrativesList(
@@ -114,28 +202,31 @@ function App() {
       articlesByCluster,
     );
 
+    setArticleIndex(prev => mergeArticleListItems(prev, articlesRes.articles));
     setNarrativesByWeek(prev => ({ ...prev, [weekId]: narratives }));
-    setWeeks(prev =>
-      prev.map(w => (w.id === weekId ? { ...w, narratives } : w)),
-    );
+    setWeeks(prev => prev.map(week => (week.id === weekId ? { ...week, narratives } : week)));
+
     return narratives;
   }
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     async function init() {
       const currentWeekId = getCurrentWeekId();
       const cachedWeeks = loadWeeksCache();
-      const cacheHasCurrentWeek = cachedWeeks.some(w => w.id === currentWeekId);
+      const cacheHasCurrentWeek = cachedWeeks.some(week => week.id === currentWeekId);
       const shouldFetchWeeks = !isCacheFresh() || !cacheHasCurrentWeek;
 
-      const [weeksRes, trendsRes] = await Promise.all([
+      const [weeksRes, trendsRes, articlesRes] = await Promise.all([
         shouldFetchWeeks ? fetchWeeks() : Promise.resolve(null),
         fetchTrendsList(),
+        fetchArticles({ limit: ARTICLE_INDEX_LIMIT }).catch(() => ({
+          articles: [] as BackendArticleListItem[],
+          total: 0,
+        })),
       ]);
 
-      const adaptedWeeks = weeksRes
-        ? adaptWeeks(weeksRes).reverse()
-        : loadWeeksCache();
+      const adaptedWeeks = weeksRes ? adaptWeeks(weeksRes).reverse() : loadWeeksCache();
       const adaptedTrends = adaptTrendsList(trendsRes.trends);
       const alerts = generateTrendAlerts(trendsRes.trends);
 
@@ -144,40 +235,40 @@ function App() {
       setWeeks(adaptedWeeks);
       setTrends(adaptedTrends);
       setTrendAlerts(alerts);
+      setArticleIndex(articlesRes.articles);
 
-      // ── Backfill real week_data for every trend sparkline ─────────────────
-      // The list endpoint has no week_data, so sparklines start as a flat
-      // placeholder. We fire fetchTrendDetail() for each trend in parallel
-      // and merge real view_count per-week data into state as each resolves.
       trendsRes.trends.forEach(item => {
         fetchTrendDetail(item.cluster_id)
           .then(detail => {
             const enriched = adaptTrendDetail(detail);
             setTrends(prev =>
-              prev.map(t =>
-                t.id === enriched.id
+              prev.map(trend =>
+                trend.id === enriched.id
                   ? {
-                      ...t,
+                      ...trend,
                       engagementData: enriched.engagementData,
                       barChartData: enriched.barChartData,
                       detailedAnalysis: enriched.detailedAnalysis,
                       creatorRisks: enriched.creatorRisks,
                       weekHeadlines: enriched.weekHeadlines,
                     }
-                  : t,
+                  : trend,
               ),
             );
           })
           .catch(() => {
-            // Non-fatal: sparkline keeps placeholder until next refresh
+            // Leave placeholder sparkline data in place when enrichment fails.
           });
       });
-      // ─────────────────────────────────────────────────────────────────────
 
       if (adaptedWeeks.length > 0) {
         const currentWeek =
-          adaptedWeeks.find(w => w.id === currentWeekId) ?? adaptedWeeks[0];
-        const narratives = await loadNarrativesForWeek(currentWeek.id);
+          adaptedWeeks.find(week => week.id === currentWeekId) ?? adaptedWeeks[0];
+        const currentWeekArticles = articlesRes.articles.filter(
+          article => article.week_number === parseWeekNumber(currentWeek.id),
+        );
+
+        await loadNarrativesForWeek(currentWeek.id, currentWeekArticles);
 
         const firstTabId = `week-${currentWeek.id}`;
         setTabs([
@@ -194,113 +285,148 @@ function App() {
           { id: 'archives', type: 'archives', baseLabel: 'Archives', closable: false },
         ]);
         setActiveTabId(firstTabId);
-
-        void narratives;
       }
 
       setIsLoading(false);
     }
 
     init().catch(() => setIsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const handleRefresh = () => {
     localStorage.removeItem(WEEKS_CACHE_KEY);
     setNarrativesByWeek({});
+    setArticleIndex([]);
+    setCachedNarrativeArticles({});
+    setCachedNarrativeClaims({});
+    setCachedVideos({});
+    setCachedVideoDetails({});
+    setTabs([]);
+    setActiveTabId('');
+    setSearchQuery('');
     setIsLoading(true);
-    setRefreshKey(k => k + 1);
+    setRefreshKey(key => key + 1);
   };
 
   const handleCloseTab = (tabId: string) => {
     const tabsToRemove = new Set([
       tabId,
-      ...tabs.filter(t => t.parentId === tabId).map(t => t.id),
+      ...tabs.filter(tab => tab.parentId === tabId).map(tab => tab.id),
     ]);
-    const newTabs = tabs.filter(t => !tabsToRemove.has(t.id));
+    const newTabs = tabs.filter(tab => !tabsToRemove.has(tab.id));
 
     if (tabsToRemove.has(activeTabId)) {
-      const closingTab = tabs.find(t => t.id === activeTabId);
-      if (closingTab?.parentId && newTabs.find(t => t.id === closingTab.parentId)) {
+      const closingTab = tabs.find(tab => tab.id === activeTabId);
+      if (closingTab?.parentId && newTabs.find(tab => tab.id === closingTab.parentId)) {
         setActiveTabId(closingTab.parentId);
       } else {
         setActiveTabId(newTabs[0]?.id ?? 'archives');
       }
     }
+
     setTabs(newTabs);
   };
 
   const handleOpenWeek = (weekId: string) => {
-    const targetTabId = `week-${weekId}`;
-    const week = weeks.find(w => w.id === weekId);
+    const week = weeks.find(item => item.id === weekId);
     if (!week) return;
 
-    if (!tabs.find(t => t.id === targetTabId)) {
-      setTabs(prev => [
+    const targetTabId = `week-${weekId}`;
+
+    setTabs(prev => {
+      if (prev.find(tab => tab.id === targetTabId)) return prev;
+
+      const pinnedWeekId = prev.find(tab => tab.type === 'week' && !tab.closable)?.weekId;
+
+      return [
         ...prev,
-        { id: targetTabId, type: 'week', weekId, baseLabel: week.weekName, closable: true },
-      ]);
-    }
+        {
+          id: targetTabId,
+          type: 'week',
+          weekId,
+          baseLabel: week.weekName,
+          closable: weekId !== pinnedWeekId,
+        },
+      ];
+    });
+
     setActiveTabId(targetTabId);
     loadNarrativesForWeek(weekId).catch(() => {});
   };
 
-  const handleReadMore = (narrativeId: string) => {
-    const activeTab = tabs.find(t => t.id === activeTabId);
-    if (!activeTab || activeTab.type !== 'week' || !activeTab.weekId) return;
+  const handleOpenNarrative = (weekId: string, narrativeId: string, label?: string) => {
+    const week = weeks.find(item => item.id === weekId);
+    if (!week) return;
 
-    const weekNarratives = getNarrativesForWeek(activeTab.weekId);
-    const narrative = weekNarratives.find(n => n.id === narrativeId);
-    const label = narrative?.headline ?? 'Narrative Detail';
-    const narrativeTabId = `narrative-${narrativeId}`;
+    const parentTabId = `week-${weekId}`;
+    const narrativeTabId = getNarrativeTabId(weekId, narrativeId);
+    const cachedNarrative = getNarrativesForWeek(weekId).find(
+      narrative => narrative.id === narrativeId,
+    );
+    const baseLabel = label ?? cachedNarrative?.headline ?? 'Narrative Detail';
 
     setTabs(prev => {
-      if (prev.find(t => t.id === narrativeTabId)) return prev;
-      return [
-        ...prev,
-        {
+      const nextTabs = [...prev];
+      const pinnedWeekId = prev.find(tab => tab.type === 'week' && !tab.closable)?.weekId;
+
+      if (!nextTabs.find(tab => tab.id === parentTabId)) {
+        nextTabs.push({
+          id: parentTabId,
+          type: 'week',
+          weekId,
+          baseLabel: week.weekName,
+          closable: weekId !== pinnedWeekId,
+        });
+      }
+
+      if (!nextTabs.find(tab => tab.id === narrativeTabId)) {
+        nextTabs.push({
           id: narrativeTabId,
           type: 'week',
-          weekId: activeTab.weekId,
+          weekId,
           narrativeId,
-          baseLabel: label,
+          baseLabel,
           closable: true,
-          parentId: `week-${activeTab.weekId}`,
-        },
-      ];
+          parentId: parentTabId,
+        });
+      }
+
+      return nextTabs;
     });
+
     setActiveTabId(narrativeTabId);
+
+    loadNarrativesForWeek(weekId)
+      .then(narratives => {
+        const narrative = narratives.find(item => item.id === narrativeId);
+        if (!narrative) return;
+
+        setTabs(prev =>
+          prev.map(tab =>
+            tab.id === narrativeTabId ? { ...tab, baseLabel: narrative.headline } : tab,
+          ),
+        );
+      })
+      .catch(() => {});
   };
 
-  const handleVideoClick = (videoId: string | null) => {
-    if (!videoId) return;
-    const activeTab = tabs.find(t => t.id === activeTabId);
-    const videoTabId = `video-${videoId}`;
+  const handleReadMore = (narrativeId: string) => {
+    const activeTab = tabs.find(tab => tab.id === activeTabId);
+    if (!activeTab?.weekId) return;
 
-    setTabs(prev => {
-      if (prev.find(t => t.id === videoTabId)) return prev;
-      return [
-        ...prev,
-        {
-          id: videoTabId,
-          type: 'video',
-          videoId,
-          baseLabel: 'Video Insight',
-          closable: true,
-          parentId: activeTab ? activeTab.id : undefined,
-        },
-      ];
-    });
-    setActiveTabId(videoTabId);
+    const narrative = getNarrativesForWeek(activeTab.weekId).find(item => item.id === narrativeId);
+    handleOpenNarrative(activeTab.weekId, narrativeId, narrative?.headline);
   };
 
   const handleTrendClick = (trendId: string) => {
     const trendTabId = `trend-${trendId}`;
-    const trend = trends.find(t => t.id === trendId);
+    const trend = trends.find(item => item.id === trendId);
     const label = trend?.name ?? 'Trend Detail';
 
     setTabs(prev => {
-      if (prev.find(t => t.id === trendTabId)) return prev;
+      if (prev.find(tab => tab.id === trendTabId)) return prev;
+
       return [
         ...prev,
         {
@@ -313,56 +439,354 @@ function App() {
         },
       ];
     });
+
     setActiveTabId(trendTabId);
   };
 
   const handleNarrativeClickFromTrend = (narrativeId: string, weekId: string) => {
-    const parentTabId = `week-${weekId}`;
-    const narrativeTabId = `narrative-${narrativeId}`;
-    const week = weeks.find(w => w.id === weekId);
-    const weekNarratives = getNarrativesForWeek(weekId);
-    const narrative = weekNarratives.find(n => n.id === narrativeId);
-    const label = narrative?.headline ?? 'Narrative Detail';
+    const narrative = getNarrativesForWeek(weekId).find(item => item.id === narrativeId);
+    handleOpenNarrative(weekId, narrativeId, narrative?.headline);
+  };
+
+  const handleVideoClick = (videoId: string | null, parentTabId?: string) => {
+    if (!videoId) return;
+
+    const videoTabId = `video-${videoId}`;
+    const rootedParentId =
+      findRootTabId(parentTabId ?? activeTabId, tabs) ??
+      tabs.find(tab => tab.type === 'videos')?.id ??
+      tabs.find(tab => !tab.parentId)?.id;
 
     setTabs(prev => {
-      const newTabs = [...prev];
-      if (!newTabs.find(t => t.id === parentTabId)) {
-        newTabs.push({
-          id: parentTabId,
-          type: 'week',
-          weekId,
-          baseLabel: week?.weekName ?? 'Week',
+      if (prev.find(tab => tab.id === videoTabId)) return prev;
+
+      return [
+        ...prev,
+        {
+          id: videoTabId,
+          type: 'video',
+          videoId,
+          baseLabel: 'Video Insight',
           closable: true,
-        });
-      }
-      if (!newTabs.find(t => t.id === narrativeTabId)) {
-        newTabs.push({
-          id: narrativeTabId,
-          type: 'week',
-          weekId,
-          narrativeId,
-          baseLabel: label,
-          closable: true,
-          parentId: parentTabId,
-        });
-      }
-      return newTabs;
+          parentId: rootedParentId,
+        },
+      ];
     });
-    setActiveTabId(narrativeTabId);
-    loadNarrativesForWeek(weekId).catch(() => {});
+
+    setActiveTabId(videoTabId);
   };
 
   const handleBack = () => handleCloseTab(activeTabId);
 
+  const handleArticleCached = (
+    weekId: string,
+    narrativeId: string,
+    article: BackendArticleDetail,
+  ) => {
+    const cacheKey = getNarrativeCacheKey(weekId, narrativeId);
+
+    setCachedNarrativeArticles(prev => ({
+      ...prev,
+      [cacheKey]: { weekId, narrativeId, article },
+    }));
+
+    setArticleIndex(prev =>
+      mergeArticleListItems(prev, [
+        {
+          article_id: article.article_id,
+          cluster_id: article.cluster_id,
+          week_number: article.week_number,
+          week_start_date: article.week_start_date,
+          title: article.title,
+          overview: article.overview,
+          created_at: article.created_at,
+        },
+      ]),
+    );
+  };
+
+  const handleClaimsCached = (
+    weekId: string,
+    narrativeId: string,
+    narrativeTitle: string,
+    claims: Claim[],
+  ) => {
+    const cacheKey = getNarrativeCacheKey(weekId, narrativeId);
+
+    setCachedNarrativeClaims(prev => ({
+      ...prev,
+      [cacheKey]: {
+        weekId,
+        narrativeId,
+        narrativeTitle,
+        claims,
+      },
+    }));
+  };
+
+  const handleClaimsBatchCached = (
+    entries: Array<{
+      weekId: string;
+      narrativeId: string;
+      narrativeTitle: string;
+      claims: Claim[];
+    }>,
+  ) => {
+    if (entries.length === 0) return;
+
+    setCachedNarrativeClaims(prev => {
+      const next = { ...prev };
+      entries.forEach(entry => {
+        next[getNarrativeCacheKey(entry.weekId, entry.narrativeId)] = entry;
+      });
+      return next;
+    });
+  };
+
+  const handleVideosCached = (videos: Video[]) => {
+    if (videos.length === 0) return;
+
+    setCachedVideos(prev => {
+      const next = { ...prev };
+      videos.forEach(video => {
+        next[video.id] = video;
+      });
+      return next;
+    });
+  };
+
+  const handleVideoCached = (video: VideoDetailData) => {
+    setCachedVideoDetails(prev => ({ ...prev, [video.id]: video }));
+    setCachedVideos(prev => ({ ...prev, [video.id]: video }));
+  };
+
+  const searchIndex = useMemo(() => {
+    const documents: SearchDocument[] = [];
+    const weekMap = new Map(weeks.map(week => [week.id, week]));
+    const trendMap = new Map(trends.map(trend => [trend.id, trend]));
+    const articleByNarrative = new Map(
+      articleIndex.map(article => [
+        getNarrativeCacheKey(`week${article.week_number}`, article.cluster_id.toString()),
+        article,
+      ]),
+    );
+    const loadedNarrativeKeys = new Set<string>();
+
+    weeks.forEach(week => {
+      const cachedNarratives = narrativesByWeek[week.id] ?? [];
+
+      documents.push({
+        id: `week:${week.id}`,
+        kind: 'week',
+        title: week.weekName,
+        subtitle: week.dateRange,
+        body: [
+          week.summary.headline,
+          reactNodeToText(week.summary.content),
+          cachedNarratives.map(narrative => narrative.headline).join(' | '),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        keywords: cachedNarratives.map(narrative => narrative.headline),
+        target: { type: 'week', weekId: week.id },
+      });
+    });
+
+    Object.entries(narrativesByWeek).forEach(([weekId, narratives]) => {
+      const week = weekMap.get(weekId);
+
+      narratives.forEach(narrative => {
+        const cacheKey = getNarrativeCacheKey(weekId, narrative.id);
+        const indexedArticle = articleByNarrative.get(cacheKey);
+        const detailedArticle = cachedNarrativeArticles[cacheKey]?.article;
+        const trendNames = narrative.trendIds
+          .map(trendId => trendMap.get(trendId)?.name)
+          .filter(Boolean) as string[];
+
+        loadedNarrativeKeys.add(cacheKey);
+
+        documents.push({
+          id: `narrative:${cacheKey}`,
+          kind: 'narrative',
+          title: detailedArticle?.title ?? indexedArticle?.title ?? narrative.headline,
+          subtitle: [week?.weekName ?? weekId, reactNodeToText(narrative.subheadline)]
+            .filter(Boolean)
+            .join(' · '),
+          body: [
+            reactNodeToText(narrative.summary),
+            narrative.overview,
+            reactNodeToText(narrative.fullText),
+            indexedArticle?.overview,
+            detailedArticle?.overview,
+            detailedArticle?.body,
+          ]
+            .filter(Boolean)
+            .join(' '),
+          keywords: [
+            narrative.category,
+            ...trendNames,
+            week?.dateRange ?? '',
+            reactNodeToText(narrative.subheadline),
+          ].filter(Boolean),
+          target: { type: 'narrative', weekId, narrativeId: narrative.id },
+        });
+      });
+    });
+
+    articleIndex.forEach(article => {
+      const weekId = `week${article.week_number}`;
+      const cacheKey = getNarrativeCacheKey(weekId, article.cluster_id.toString());
+      if (loadedNarrativeKeys.has(cacheKey)) return;
+
+      const week = weekMap.get(weekId);
+      if (!week) return;
+
+      documents.push({
+        id: `article:${cacheKey}`,
+        kind: 'narrative',
+        title: article.title,
+        subtitle: [week.weekName, week.dateRange].filter(Boolean).join(' · '),
+        body: article.overview,
+        keywords: [week.weekName, week.dateRange].filter(Boolean),
+        target: {
+          type: 'narrative',
+          weekId,
+          narrativeId: article.cluster_id.toString(),
+        },
+      });
+    });
+
+    trends.forEach(trend => {
+      documents.push({
+        id: `trend:${trend.id}`,
+        kind: 'trend',
+        title: trend.name,
+        subtitle: 'Trends Analytics',
+        body: [
+          reactNodeToText(trend.description),
+          trend.overallSentiment,
+          trend.recentSentiment,
+          reactNodeToText(trend.detailedAnalysis),
+          Object.values(trend.weekHeadlines).join(' '),
+          trend.creatorRisks.map(risk => `${risk.channelId} ${risk.riskLevel}`).join(' '),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        keywords: [trend.overallSentiment, trend.recentSentiment],
+        target: { type: 'trend', trendId: trend.id },
+      });
+    });
+
+    const videoIds = new Set([
+      ...Object.keys(cachedVideos),
+      ...Object.keys(cachedVideoDetails),
+    ]);
+
+    videoIds.forEach(videoId => {
+      const summary = cachedVideos[videoId];
+      const detail = cachedVideoDetails[videoId];
+      const video = detail ?? summary;
+      if (!video) return;
+
+      documents.push({
+        id: `video:${videoId}`,
+        kind: 'video',
+        title: video.title,
+        subtitle: [video.channel, video.clusterLabel].filter(Boolean).join(' · '),
+        body: [
+          detail?.description,
+          detail?.transcript,
+          detail?.keyClaims.join(' '),
+          detail?.topics.join(' '),
+          detail?.topComments.map(comment => comment.text).join(' '),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        keywords: [
+          video.channel,
+          video.clusterLabel,
+          ...(detail?.topics ?? []),
+          ...(detail?.keyClaims ?? []),
+        ].filter(Boolean),
+        target: { type: 'video', videoId },
+      });
+    });
+
+    Object.values(cachedNarrativeClaims).forEach(entry => {
+      const week = weekMap.get(entry.weekId);
+
+      entry.claims.forEach((claim, index) => {
+        documents.push({
+          id: `claim:${entry.weekId}:${entry.narrativeId}:${claim.id}:${index}`,
+          kind: 'claim',
+          title: reactNodeToText(claim.extractedClaim),
+          subtitle: [entry.narrativeTitle, week?.weekName ?? entry.weekId, claim.creatorName]
+            .filter(Boolean)
+            .join(' · '),
+          body: [claim.originalQuote, entry.narrativeTitle, claim.creatorName]
+            .filter(Boolean)
+            .join(' '),
+          keywords: [claim.claimType, claim.creatorName],
+          target: claim.videoId
+            ? { type: 'video', videoId: claim.videoId }
+            : {
+                type: 'narrative',
+                weekId: entry.weekId,
+                narrativeId: entry.narrativeId,
+              },
+        });
+      });
+    });
+
+    return documents;
+  }, [
+    articleIndex,
+    cachedNarrativeArticles,
+    cachedNarrativeClaims,
+    cachedVideoDetails,
+    cachedVideos,
+    narrativesByWeek,
+    trends,
+    weeks,
+  ]);
+
+  const searchResults = useMemo(
+    () => searchDocuments(searchIndex, deferredSearchQuery),
+    [deferredSearchQuery, searchIndex],
+  );
+
+  const handleSearchSelect = (result: SearchMatch) => {
+    setSearchQuery('');
+
+    switch (result.target.type) {
+      case 'week':
+        handleOpenWeek(result.target.weekId);
+        return;
+      case 'narrative':
+        handleOpenNarrative(
+          result.target.weekId,
+          result.target.narrativeId,
+          result.title,
+        );
+        return;
+      case 'trend':
+        handleTrendClick(result.target.trendId);
+        return;
+      case 'video':
+        handleVideoClick(result.target.videoId, tabs.find(tab => tab.type === 'videos')?.id);
+        return;
+    }
+  };
+
   const tickerItems =
     trends.length > 0
-      ? trends.map(t => `${t.name} | Heat: ${t.totalEngagement.toFixed(0)}`)
-      : ['Loading intelligence feed…'];
+      ? trends.map(trend => `${trend.name} | Heat: ${trend.totalEngagement.toFixed(0)}`)
+      : ['Loading intelligence feed...'];
 
   if (isLoading) {
     return (
       <div className="app-container">
-        <Masthead tickerItems={['Connecting to intelligence feed…']} />
+        <Masthead tickerItems={['Connecting to intelligence feed...']} />
         <div
           style={{
             display: 'flex',
@@ -372,7 +796,7 @@ function App() {
           }}
         >
           <p className="font-mono" style={{ color: 'var(--ink-faded)', fontSize: '1.1rem' }}>
-            Loading weekly intelligence digest…
+            Loading weekly intelligence digest...
           </p>
         </div>
       </div>
@@ -380,21 +804,29 @@ function App() {
   }
 
   const renderContent = () => {
-    const activeTab = tabs.find(t => t.id === activeTabId);
+    const activeTab = tabs.find(tab => tab.id === activeTabId);
     if (!activeTab) return null;
 
     if (activeTab.type === 'video' && activeTab.videoId) {
-      return <VideoDetail videoId={activeTab.videoId} onBack={handleBack} />;
+      return (
+        <VideoDetail
+          videoId={activeTab.videoId}
+          onBack={handleBack}
+          onVideoCached={handleVideoCached}
+        />
+      );
     }
 
     if (activeTab.type === 'videos') {
-      return <Videos onVideoClick={handleVideoClick} />;
+      return (
+        <Videos onVideoClick={handleVideoClick} onVideosCached={handleVideosCached} />
+      );
     }
 
     if (activeTab.type === 'trends') {
       if (activeTab.trendId) {
-        const trend = trends.find(t => t.id === activeTab.trendId);
-        if (trend)
+        const trend = trends.find(item => item.id === activeTab.trendId);
+        if (trend) {
           return (
             <TrendDetail
               trend={trend}
@@ -402,7 +834,9 @@ function App() {
               onNarrativeClick={handleNarrativeClickFromTrend}
             />
           );
+        }
       }
+
       return (
         <Trends
           trends={trends}
@@ -413,8 +847,18 @@ function App() {
     }
 
     if (activeTab.type === 'claims') {
-      const currentWeekId = tabs.find(t => t.type === 'week' && !t.closable)?.weekId ?? weeks[0]?.id ?? '';
-      return <Claims currentWeekId={currentWeekId} weeks={weeks} />;
+      const currentWeekId =
+        tabs.find(tab => tab.type === 'week' && !tab.closable)?.weekId ??
+        weeks[0]?.id ??
+        '';
+
+      return (
+        <Claims
+          currentWeekId={currentWeekId}
+          weeks={weeks}
+          onClaimsCached={handleClaimsBatchCached}
+        />
+      );
     }
 
     if (activeTab.type === 'archives') {
@@ -422,39 +866,54 @@ function App() {
     }
 
     if (activeTab.type === 'week' && activeTab.weekId) {
-      const week = weeks.find(w => w.id === activeTab.weekId);
-      if (week) {
-        const weekWithNarratives = {
-          ...week,
-          narratives: getNarrativesForWeek(week.id),
-        };
+      const week = weeks.find(item => item.id === activeTab.weekId);
+      if (!week) return <div>Content not found</div>;
 
-        if (activeTab.narrativeId) {
-          const narrative = weekWithNarratives.narratives.find(
-            n => n.id === activeTab.narrativeId,
+      const weekNarratives = getNarrativesForWeek(week.id);
+      const weekWithNarratives = {
+        ...week,
+        narratives: weekNarratives,
+      };
+
+      if (activeTab.narrativeId) {
+        const narrative = weekNarratives.find(item => item.id === activeTab.narrativeId);
+
+        if (narrative) {
+          return (
+            <NarrativeDetail
+              narrative={narrative}
+              trends={trends}
+              onBack={handleBack}
+              onTrendClick={handleTrendClick}
+              onVideoClick={handleVideoClick}
+              onArticleCached={handleArticleCached}
+              onClaimsCached={handleClaimsCached}
+            />
           );
-          if (narrative) {
-            return (
-              <NarrativeDetail
-                narrative={narrative}
-                trends={trends}
-                onBack={handleBack}
-                onTrendClick={handleTrendClick}
-                onVideoClick={handleVideoClick}
-              />
-            );
-          }
         }
 
-        return (
-          <WeekReport
-            week={weekWithNarratives}
-            trends={trends}
-            onReadMore={handleReadMore}
-            onTrendClick={handleTrendClick}
-          />
-        );
+        if (!narrativesByWeek[week.id]) {
+          return (
+            <section className="view-section">
+              <button className="btn-back" onClick={handleBack}>
+                &larr; Back to Report
+              </button>
+              <p className="font-mono" style={{ color: 'var(--ink-faded)' }}>
+                Loading narrative archive...
+              </p>
+            </section>
+          );
+        }
       }
+
+      return (
+        <WeekReport
+          week={weekWithNarratives}
+          trends={trends}
+          onReadMore={handleReadMore}
+          onTrendClick={handleTrendClick}
+        />
+      );
     }
 
     return <div>Content not found</div>;
@@ -462,7 +921,14 @@ function App() {
 
   return (
     <div className="app-container">
-      <Masthead tickerItems={tickerItems} onRefresh={handleRefresh} />
+      <Masthead
+        tickerItems={tickerItems}
+        onRefresh={handleRefresh}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        onSearchQueryChange={setSearchQuery}
+        onSearchSelect={handleSearchSelect}
+      />
       <FolderTabs
         tabs={tabs}
         activeTabId={activeTabId}
