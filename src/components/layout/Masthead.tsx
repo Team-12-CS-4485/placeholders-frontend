@@ -80,6 +80,17 @@ export const Masthead: React.FC<MastheadProps> = ({
 
   return (
     <header className="masthead">
+      <h1>Newsify</h1>
+      <div className="masthead-tagline">
+        The Investigative Archive - YouTube Intelligence
+      </div>
+      <div className="sub-meta">
+        <span>Vol. CXCIV ... No. 59,321</span>
+        <span>Automated Weekly Digest</span>
+        <span>{currentDate}</span>
+      </div>
+      <Ticker items={tickerItems} />
+      <div className="masthead-divider" aria-hidden="true" />
       {(canSearch || onRefresh) && (
         <div className="masthead-controls">
           {onRefresh && (
@@ -88,7 +99,7 @@ export const Masthead: React.FC<MastheadProps> = ({
               title="Refresh data"
               className="masthead-refresh-btn"
             >
-              ↻ Refresh
+              ↻ Refresh Data
             </button>
           )}
 
@@ -111,7 +122,7 @@ export const Masthead: React.FC<MastheadProps> = ({
                 type="text"
                 className="masthead-search-input"
                 value={searchQuery}
-                placeholder="Search weeks, narratives, trends, claims, videos"
+                placeholder="Search"
                 onChange={event => {
                   setHighlightedIndex(0);
                   onSearchQueryChange?.(event.target.value);
@@ -185,16 +196,6 @@ export const Masthead: React.FC<MastheadProps> = ({
           )}
         </div>
       )}
-      <h1>Newsify</h1>
-      <div className="masthead-tagline">
-        The Investigative Archive - YouTube Intelligence
-      </div>
-      <div className="sub-meta">
-        <span>Vol. CXCIV ... No. 59,321</span>
-        <span>Automated Weekly Digest</span>
-        <span>{currentDate}</span>
-      </div>
-      <Ticker items={tickerItems} />
     </header>
   );
 };

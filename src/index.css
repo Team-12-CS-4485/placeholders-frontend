@@ -63,8 +63,7 @@ h1, h2, h3, h4, h5 {
 /* --- HEADER & MASTHEAD --- */
 .masthead {
   text-align: center;
-  border-bottom: 3px solid var(--ink-heavy);
-  padding-bottom: 10px;
+  padding-bottom: 6px;
   margin-bottom: 30px;
 }
 
@@ -114,12 +113,19 @@ h1, h2, h3, h4, h5 {
   text-align: right;
 }
 
+.masthead-divider {
+  width: 100%;
+  border-bottom: 3px solid var(--ink-heavy);
+  margin-top: 8px;
+}
+
 .masthead-controls {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   width: 100%;
-  margin-bottom: 18px;
+  margin-top: 12px;
+  margin-bottom: 2px;
 }
 
 .masthead-refresh-btn {
@@ -145,7 +151,7 @@ h1, h2, h3, h4, h5 {
 .masthead-search {
   position: relative;
   flex: 0 0 auto;
-  width: min(455px, 100%);
+  width: min(200px, 100%);
   margin-left: auto;
 }
 
