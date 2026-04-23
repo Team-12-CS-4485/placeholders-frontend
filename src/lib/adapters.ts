@@ -46,11 +46,6 @@ function normalizeRiskLevel(level: string): 'HIGH' | 'MED' | 'LOW' {
   return 'LOW';
 }
 
-function truncate(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen).replace(/\s+\S*$/, '') + '…';
-}
-
 // ---- Weeks ----
 
 export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
@@ -88,9 +83,7 @@ export function adaptNarrativesList(
       subheadline: item.label,
       overview: article?.overview,
       articleId: article?.article_id,
-      summary: article?.overview
-        ? truncate(article.overview, 200)
-        : item.top_topics.join(' · '),
+      summary: article?.overview ?? item.top_topics.join(' · '),
       fullText: item.top_topics.length ? [item.top_topics.join(' · ')] : [],
       pageNumber: index + 1,
       claims: [],
@@ -109,9 +102,7 @@ export function adaptWeekNarrativesList(
   return items.map((item, index) => {
     const article = articlesByCluster?.get(item.cluster_id);
     const headline = article?.title ?? item.narrative_headline ?? item.cluster_label;
-    const summary = article?.overview
-      ? truncate(article.overview, 200)
-      : item.narrative_summary ?? item.week_overview ?? item.top_topics.join(' · ');
+    const summary = article?.overview ?? item.narrative_summary ?? item.week_overview ?? item.top_topics.join(' · ');
     return {
       id: item.cluster_id.toString(),
       weekId,
@@ -121,11 +112,13 @@ export function adaptWeekNarrativesList(
       overview: article?.overview ?? item.week_overview ?? undefined,
       articleId: article?.article_id,
       summary,
-      fullText: item.top_claims.length ? item.top_claims : item.top_topics,
+      fullText: (item.top_claims.length ? item.top_claims : item.top_topics).slice(0, 2),
       pageNumber: index + 1,
       claims: [],
       trendIds: [item.cluster_id.toString()],
       viewCount: item.view_count,
+      claimCount: item.top_claims.length,
+      isBreaking: item.breaking_count > 0,
     };
   });
 }

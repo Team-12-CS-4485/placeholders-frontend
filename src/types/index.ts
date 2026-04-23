@@ -60,6 +60,10 @@ export interface Narrative {
   trendIds: string[];
   /** Total views for this narrative cluster in its week — used for heat-based ordering */
   viewCount?: number;
+  /** Number of top claims reported by the backend for this cluster */
+  claimCount?: number;
+  /** True when the backend reports breaking_count > 0 for this cluster */
+  isBreaking?: boolean;
 }
 
 export interface Trend {
