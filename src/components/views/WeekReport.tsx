@@ -15,42 +15,19 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
     ? [...week.narratives].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
     : week.narratives;
 
-  const { items: narrativesWithLayout } = orderedNarratives.reduce(
-    (acc, narrative, index) => {
-      const span = 12;
-      const isNewLine = true;
-      return {
-        currentSpan: acc.currentSpan + span,
-        items: [...acc.items, { narrative, index, span, isNewLine }],
-      };
-    },
-    {
-      currentSpan: 0,
-      items: [] as Array<{
-        narrative: (typeof orderedNarratives)[number];
-        index: number;
-        span: number;
-        isNewLine: boolean;
-      }>,
-    }
-  );
-
   const trendsById = new Map(trends.map(t => [t.id, t]));
 
-  const alertNarrative = orderedNarratives.find(n => n.isBreaking) ?? null;
-
+  // Determine classifieds threshold based on engagement
   const maxViews = orderedNarratives[0]?.viewCount ?? 0;
   const classifiedThreshold = maxViews > 0 ? maxViews * 0.15 : 0;
 
-  const classifiedItems = narrativesWithLayout.filter(
-    ({ narrative, index }) =>
-      index !== 0 &&
-      narrative.viewCount !== undefined &&
-      classifiedThreshold > 0 &&
-      narrative.viewCount < classifiedThreshold
+  // Classify low-engagement narratives (excluding hero)
+  const classifiedIds = new Set(
+    orderedNarratives
+      .slice(1) // Skip hero
+      .filter(n => n.viewCount !== undefined && classifiedThreshold > 0 && n.viewCount < classifiedThreshold)
+      .map(n => n.id)
   );
-
-  const classifiedIds = new Set(classifiedItems.map(({ narrative }) => narrative.id));
 
   // Group narratives by their first (primary) trend ID
   const narrativesByTrend = orderedNarratives.reduce(
@@ -63,12 +40,12 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
     {} as Record<string, typeof orderedNarratives>
   );
 
-  // Build trend order from only non-classified narratives
-  // This ensures dividers only appear for trends with main-grid narratives
+  // Get unique trend IDs from main-grid narratives (with deduplication in order)
   const mainGridNarratives = orderedNarratives.filter(n => !classifiedIds.has(n.id));
-  const trendOrder = mainGridNarratives
-    .map(n => n.trendIds[0])
-    .filter((id, idx, arr) => arr.indexOf(id) === idx);
+  const trendOrder = [...new Map(mainGridNarratives.map(n => [n.trendIds[0], true])).keys()];
+
+  const alertNarrative = orderedNarratives.find(n => n.isBreaking) ?? null;
+  const classifiedItems = orderedNarratives.filter(n => classifiedIds.has(n.id));
 
   return (
     <section className="view-section">
@@ -115,14 +92,10 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
 
               {/* Narratives for this trend */}
               {narrativesForTrend.map(narrative => {
-                const layoutItem = narrativesWithLayout.find(n => n.narrative.id === narrative.id);
-                if (!layoutItem) return null;
-                const { index, span, isNewLine } = layoutItem;
-                const colClass = `col-span-${span} ${!isNewLine ? 'vertical-divider' : ''}`.trim();
-                const isHero = index === 0;
+                const isHero = narrative === orderedNarratives[0];
 
                 return (
-                  <div key={narrative.id} className={`${colClass} article-block`}>
+                  <div key={narrative.id} className="col-span-12 article-block">
                     <div className="byline">
                       {narrative.viewCount !== undefined && formatViews(narrative.viewCount)}
                       {narrative.claimCount !== undefined && <>&nbsp;·&nbsp;{narrative.claimCount} {narrative.claimCount === 1 ? 'claim' : 'claims'}</>}
@@ -185,11 +158,7 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
         <div className="alert-box">
           <div className="stamp">Editor's Alert</div>
           <p>
-            {alertNarrative.overview
-              ? alertNarrative.overview.length > 200
-                ? alertNarrative.overview.slice(0, 200) + '…'
-                : alertNarrative.overview
-              : `Breaking: ${alertNarrative.headline}`}
+            {alertNarrative.overview ?? `Breaking: ${alertNarrative.headline}`}
           </p>
         </div>
       )}
@@ -203,8 +172,8 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
             <hr />
           </div>
           <div className="classifieds-grid">
-            {classifiedItems.map(({ narrative }) => {
-              const chipTrend = narrative.trendIds.map(id => trendsById.get(id)).find(Boolean);
+            {classifiedItems.map(narrative => {
+              const chipTrend = narrative.trendIds.map((id: string) => trendsById.get(id)).find(Boolean);
               return (
                 <div key={narrative.id} className="classified-item">
                   <span className="classified-meta">

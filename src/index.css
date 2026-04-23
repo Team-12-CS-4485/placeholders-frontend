@@ -309,9 +309,8 @@ h1, h2, h3, h4, h5 {
 }
 
 .folder-tabs-container::-webkit-scrollbar {
-  display: none;
+  height: 8px;
 }
-
 .tab-group {
   display: flex;
   align-items: flex-end;

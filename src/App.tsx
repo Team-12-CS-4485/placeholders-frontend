@@ -819,7 +819,11 @@ function App() {
 
     if (activeTab.type === 'videos') {
       return (
-        <Videos onVideoClick={handleVideoClick} onVideosCached={handleVideosCached} />
+        <Videos
+          onVideoClick={handleVideoClick}
+          onVideosCached={handleVideosCached}
+          initialVideos={Object.values(cachedVideos)}
+        />
       );
     }
 

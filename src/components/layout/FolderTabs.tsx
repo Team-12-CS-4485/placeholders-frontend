@@ -30,10 +30,45 @@ export const FolderTabs: React.FC<FolderTabsProps> = ({
     }
   }, [activeTabId]);
 
+  // Handle arrow key navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Get all tabs in order (base tabs + their children)
+        const allTabs: typeof tabs = [];
+        tabs.filter(t => !t.parentId).forEach(baseTab => {
+          allTabs.push(baseTab);
+          allTabs.push(...tabs.filter(t => t.parentId === baseTab.id));
+        });
+
+        // Find current tab index
+        const currentIndex = allTabs.findIndex(t => t.id === activeTabId);
+        if (currentIndex === -1) return;
+
+        // Navigate to next/previous tab
+        let newIndex = currentIndex;
+        if (e.key === 'ArrowLeft') {
+          newIndex = currentIndex > 0 ? currentIndex - 1 : allTabs.length - 1;
+        } else {
+          newIndex = currentIndex < allTabs.length - 1 ? currentIndex + 1 : 0;
+        }
+
+        onTabChange(allTabs[newIndex].id);
+        e.preventDefault();
+      }
+    };
+
+    const navElement = scrollContainerRef.current;
+    if (navElement) {
+      navElement.addEventListener('keydown', handleKeyDown);
+      return () => navElement.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [tabs, activeTabId, onTabChange]);
+
   const baseTabs = tabs.filter(tab => !tab.parentId);
 
   return (
-    <nav ref={scrollContainerRef} className="folder-tabs-container" aria-label="Main Navigation">
+    <nav ref={scrollContainerRef} className="folder-tabs-container" aria-label="Main Navigation" tabIndex={0}>
       {baseTabs.map((baseTab) => {
         const children = tabs.filter(t => t.parentId === baseTab.id);
 

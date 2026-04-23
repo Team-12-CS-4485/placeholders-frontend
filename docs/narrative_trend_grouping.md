@@ -5,11 +5,13 @@
 The WeekReport now **groups narratives by their primary trend** with decorative rule dividers separating each trend section. This creates a newspaper-style layout where stories are visually organized by topic, helping readers quickly scan the week's coverage.
 
 **Key improvements:**
+
 - **Trend-based organization**: All stories for Tech appear together, then all stories for Politics, etc.
 - **Smart dividers**: Rule dividers appear only for trends with main-grid narratives (classified low-engagement stories don't get empty dividers)
 - **Enhanced bylines**: Shows engagement volume, claim count, and breaking status instead of generic bureau/date labels
 - **Relative classifieds threshold**: Low-engagement narratives automatically move to a "Classified Notices" section based on 15% of the week's top story's engagement
 - **Drop caps on all narratives**: Newspaper-style drop caps now appear on every narrative summary for visual consistency
+- **Full-text overviews**: Narrative summaries display in full without truncation, providing readers with necessary context to decide whether to read more
 
 ---
 
@@ -21,31 +23,88 @@ The WeekReport now **groups narratives by their primary trend** with decorative 
 
 ---
 
-## Files You Will Touch
+## Major Design Decisions
 
-| File | What Changed |
-|---|---|
-| `src/types/index.ts` | Added `claimCount?: number` to `Narrative` interface |
-| `src/lib/adapters.ts` | Map `claimCount` from backend, cap `fullText` at 2 items, removed unused `truncate()` |
-| `src/components/views/WeekReport.tsx` | Trend grouping logic, relative classifieds threshold, new byline, drop-cap on all narratives |
-| `src/index.css` | Reduced drop-cap size/margin for better readability, hidden scrollbar on tab overflow |
+### 1. Full Overviews (No Truncation)
+
+After 7 weeks of production clustering data, overviews remain reasonably sized (typically 5-7 lines). The full text provides readers with necessary context to decide whether to click through and read more. The redesigned layout with drop caps and fact-card sidebars accommodates longer paragraphs comfortably, so length won't break the layout.
+
+### 2. Relative Engagement Threshold (15%)
+
+Classifieds threshold is calculated as `maxViews * 0.15` instead of a hardcoded number. This means:
+
+- **Advantage:** Auto-adjusts each week — a "slow news week" won't suddenly classify everything
+- **Edge case:** If all narratives have zero/undefined engagement, nothing gets classified (prevents false positives)
+- **Rationale:** Aggressive enough to catch genuinely low-engagement stories but forgiving enough for weeks with lower overall engagement
+
+### 3. Primary Trend Selection
+
+Narratives use `trendIds[0]` (first trend) as their primary trend for grouping. Multi-trend narratives appear in only one group. If backend trends ordering changes, grouping logic needs updating.
+
+### 4. Hero Article Styling
+
+Only the first narrative in `orderedNarratives` (by engagement) gets larger font size and drop-cap emphasis. This is a global designation, not per-trend. All other narratives render identically at full width (`col-span-12`).
+
+### 5. Claim Count from `top_claims` Proxy
+
+Backend's `top_claims` array length is used as a lightweight proxy for claim count in bylines. This avoids an extra API call but means it shows "top claims" not "all claims." Users can click through to see complete claim count in detail view.
 
 ---
 
-## Understanding the Changes
+## Files Modified
 
-### 1. Trend Grouping Logic (`src/components/views/WeekReport.tsx`)
+| File | Changes |
+| --- | --- |
+| `src/types/index.ts` | Added `claimCount?: number` to Narrative interface |
+| `src/lib/adapters.ts` | Map `claimCount` from backend; cap `fullText` at 2 items; removed unused `truncate()` function |
+| `src/components/views/WeekReport.tsx` | Trend grouping logic; relative classifieds threshold; dynamic bylines; removed layout overhead; drop-cap on all narratives |
+| `src/index.css` | Reduced drop-cap size/margin; hidden scrollbar on tab overflow |
+| `src/components/layout/FolderTabs.tsx` | Added arrow key navigation (Left/Right) between tabs |
+| `src/components/views/Videos.tsx` | Added caching: only fetch on first load, use cached data on tab navigation |
+| `src/App.tsx` | Pass cached videos to Videos component to prevent re-fetches |
 
-**Building the trend order:**
-```ts
-// Only include trends that have non-classified narratives
-const mainGridNarratives = orderedNarratives.filter(n => !classifiedIds.has(n.id));
-const trendOrder = mainGridNarratives
-  .map(n => n.trendIds[0])  // Use primary (first) trend
-  .filter((id, idx, arr) => arr.indexOf(id) === idx);  // Deduplicate while preserving order
-```
+---
 
-**Grouping narratives:**
+## Code Quality: Refactoring & Cleanup
+
+### Removed Unnecessary Layout Metadata
+
+**Before:** Used a `reduce()` operation to calculate `span`, `isNewLine`, and `currentSpan` for each narrative, then did an O(n) `.find()` lookup during render to retrieve this static data.
+
+**After:** Removed entirely. All narratives render at `col-span-12` with no dividers — these are constants, not dynamic calculations.
+
+**Impact:**
+
+- Eliminated ~35 lines of boilerplate
+- Removed O(n) lookup per narrative during render
+- Code is now self-documenting: every narrative uses full width
+
+### Simplified Classifieds Calculation
+
+**Before:** Filtered `narrativesWithLayout` objects, extracted narrative, built a Set of IDs.
+
+**After:** Directly filter `orderedNarratives` with `.slice(1)` to skip hero, then filter by engagement. Cleaner data flow.
+
+### Improved Deduplication
+
+**Before:** `trendOrder = [...].filter((id, idx, arr) => arr.indexOf(id) === idx)` — O(n²) operation.
+
+**After:** `trendOrder = [...new Map([...].map(n => [n.trendIds[0], true])).keys()]` — O(n) using Map insertion ordering.
+
+### Removed Truncation Override
+
+**Before:** Editor's Alert truncated overview to 200 chars.
+
+**After:** Uses full overview, consistent with byline design decision to show full context.
+
+---
+
+## Understanding the Implementation
+
+### Trend Grouping Logic
+
+**Building narrative-to-trend mapping:**
+
 ```ts
 const narrativesByTrend = orderedNarratives.reduce(
   (acc, narrative) => {
@@ -58,64 +117,35 @@ const narrativesByTrend = orderedNarratives.reduce(
 );
 ```
 
-**Why this works:**
-- `trendOrder` only includes trends with visible narratives (skips trends where all narratives are classified)
-- `narrativesByTrend` maps trend IDs to their narratives
-- When rendering, we iterate `trendOrder` and show divider + narratives for each trend
+**Building trend order (only for non-classified narratives):**
 
-### 2. Relative Classifieds Threshold
+```ts
+const mainGridNarratives = orderedNarratives.filter(n => !classifiedIds.has(n.id));
+const trendOrder = [...new Map(mainGridNarratives.map(n => [n.trendIds[0], true])).keys()];
+```
+
+**Why this works:**
+
+- `narrativesByTrend` maps trend IDs to their narratives
+- `trendOrder` only includes trends with visible (non-classified) narratives
+- When rendering, we iterate `trendOrder` and show divider + narratives for each trend
+- If all narratives for a trend are classified, the trend doesn't appear in main grid
+
+### Classifieds Threshold
 
 ```ts
 const maxViews = orderedNarratives[0]?.viewCount ?? 0;
 const classifiedThreshold = maxViews > 0 ? maxViews * 0.15 : 0;
 
-// Narratives with viewCount < (maxViews * 0.15) go to Classifieds
+const classifiedIds = new Set(
+  orderedNarratives
+    .slice(1) // Skip hero
+    .filter(n => n.viewCount !== undefined && classifiedThreshold > 0 && n.viewCount < classifiedThreshold)
+    .map(n => n.id)
+);
 ```
 
-**Why 15%?** It's aggressive enough to catch genuinely low-engagement stories but not so harsh that a slow week suddenly classifies everything. Adjust the multiplier if testing shows it needs tuning.
-
-**Edge case:** If all narratives have `viewCount` undefined or zero, `classifiedThreshold = 0` and nothing gets classified. This prevents false positives in weeks without heat data.
-
-### 3. Claim Count Mapping
-
-In `adaptWeekNarrativesList`:
-```ts
-claimCount: item.top_claims.length,  // Backend already provides top_claims array
-```
-
-The backend's `top_claims` is a lightweight proxy for claim count (not all claims, just top ones). This avoids an extra API call and gives readers a sense of how contentious each narrative is.
-
-### 4. Context Items Capped at 2
-
-```ts
-fullText: (item.top_claims.length ? item.top_claims : item.top_topics).slice(0, 2),
-```
-
-Reduces visual noise in the fact-card sidebar. Readers can click "Continued on page X" to see the full detail view if they want more context.
-
-### 5. Drop Caps on All Narratives
-
-Changed from:
-```tsx
-{isHero
-  ? <div className="drop-cap-block"><p>{summary}</p></div>
-  : <p>{summary}</p>
-}
-```
-
-To:
-```tsx
-<div className="drop-cap-block"><p>{summary}</p></div>
-```
-
-**CSS adjustment for readability:**
-```css
-.drop-cap-block p::first-letter {
-  font-size: 3.2rem;  /* reduced from 4.2rem */
-  margin: 0px 2px 0 0;  /* reduced from 0px 4px 0 0 for tighter text wrap */
-  line-height: 0.85;
-}
-```
+**Why 15%?** It's aggressive enough to catch genuinely low-engagement stories but not so harsh that a slow week suddenly classifies everything.
 
 ---
 
@@ -132,7 +162,15 @@ To:
    - If a trend's only narratives are all classified (low engagement), that trend should have NO divider in the main grid
    - Trend should still appear in classifieds if classified narratives exist
 
-4. **Build:** `npm run build` — no TypeScript errors
+4. **Test keyboard navigation:**
+   - Click on tabs area, then use ArrowLeft/ArrowRight to navigate between tabs
+
+5. **Test video caching:**
+   - Load Video Feed tab (first load fetches data)
+   - Switch to another tab, then back to Video Feed (should use cached data, no re-fetch)
+   - Refresh page (should re-fetch)
+
+6. **Build:** `npm run build` — no TypeScript errors
 
 ---
 
@@ -140,14 +178,16 @@ To:
 
 - **Smart narrative ordering within trends**: Sort by viewCount desc within each trend group (currently uses global order)
 - **Configurable threshold**: Make the 15% multiplier editable via settings
-- **Claim count from detail view**: Once narrative detail claims are loaded, use real claim count instead of `top_claims` proxy
 - **Multi-trend narratives**: If a narrative belongs to multiple trends equally, consider showing it once per trend or using a "trending across N topics" badge
 - **Scrollable trend groups**: Collapsible trend sections if the page gets too long with many trends
+- **Keyboard shortcut to refresh**: Quick way to refresh video feed without page reload
 
 ---
 
 ## Notes for Future Developers
 
 - **Primary trend selection:** Narratives use `trendIds[0]` (first trend) as primary. If your backend changes how trends are ordered, update the grouping logic accordingly.
-- **Classified items are excluded early:** The classifieds filter happens in the adapter layer, not the component. This keeps the component clean but means the adapter needs to know about engagement thresholds in the future.
+- **Classified items are excluded early:** The classifieds filter happens at the component level, not in the adapter. This keeps data transformation clean but means any future caching logic needs to handle this.
 - **Rule dividers use CSS Grid:** The `gridColumn: '1 / -1'` spans full width. If you change the grid structure, test divider spanning.
+- **Drop cap sizing:** Currently 3.2rem with 2px right margin for tight text wrap. Adjust if typography changes.
+- **Tab scrolling removed:** Changed `overflow-x: auto` to `overflow-x: hidden` to prevent horizontal scrollbar on tab overflow. If tabs need scrolling in the future, revert this and properly hide the scrollbar with CSS
