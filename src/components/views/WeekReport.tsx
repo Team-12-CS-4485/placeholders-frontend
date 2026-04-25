@@ -1,6 +1,6 @@
 import React from 'react';
 import type { WeekData, Trend } from '../../types';
-import { formatViews } from '../../lib/weekUtils';
+import { formatViews, formatCount } from '../../lib/weekUtils';
 
 interface WeekReportProps {
   week: WeekData;
@@ -44,7 +44,8 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
   const mainGridNarratives = orderedNarratives.filter(n => !classifiedIds.has(n.id));
   const trendOrder = [...new Map(mainGridNarratives.map(n => [n.trendIds[0], true])).keys()];
 
-  const alertNarrative = orderedNarratives.find(n => n.isBreaking) ?? null;
+  // TODO: find an endpoint or usecase for this, until then this is unused
+  // const alertNarrative = orderedNarratives.find(n => n.isBreaking) ?? null;
   const classifiedItems = orderedNarratives.filter(n => classifiedIds.has(n.id));
 
   return (
@@ -57,14 +58,26 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
       {/* Weekly Summary */}
       <div style={{ paddingBottom: '20px', marginBottom: '0' }}>
         <span className="font-mono" style={{ color: 'var(--ink-faded)', textTransform: 'uppercase' }}>Week summary</span>
-        <h2 style={{ fontSize: '1.8rem', marginTop: '10px' }}>{week.summary.headline}</h2>
-        <p style={{ fontSize: '1.1rem' }}>
-          {week.summary.content}
-        </p>
-        {week.totalViews > 0 && (
-          <p className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)', marginTop: '4px' }}>
-            {formatViews(week.totalViews)} this week
-          </p>
+        <p style={{ fontSize: '1.1rem', marginTop: '10px' }}>{week.summary.headline}</p>
+        {/* Structured stats row — populated after narratives load */}
+        {(week.summary.totalNarratives !== undefined ||
+          week.summary.breakingCount !== undefined ||
+          week.summary.dominantSentiment) && (
+          <div className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--ink-faded)', marginTop: '6px' }}>
+            {week.totalViews > 0 && (
+              <>{formatCount(week.totalViews)} views</>
+            )}
+            {week.summary.totalNarratives !== undefined && (
+              <>&nbsp;·&nbsp;{week.summary.totalNarratives} narratives</>
+            )}
+            {week.summary.breakingCount !== undefined && week.summary.breakingCount > 0 && (
+              <>&nbsp;·&nbsp;{week.summary.breakingCount} breaking</>
+            )}
+            {week.summary.dominantSentiment && (
+              <>&nbsp;·&nbsp;{week.summary.dominantSentiment.charAt(0).toUpperCase() +
+                week.summary.dominantSentiment.slice(1).toLowerCase()} sentiment</>
+            )}
+          </div>
         )}
       </div>
 
@@ -153,15 +166,15 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
         })}
       </div>
 
-      {/* Editor's Alert */}
-      {alertNarrative && (
+      {/* TODO: find an endpoint or usecase for this, until then this is unused */}
+      {/* {alertNarrative && (
         <div className="alert-box">
           <div className="stamp">Editor's Alert</div>
           <p>
             {alertNarrative.overview ?? `Breaking: ${alertNarrative.headline}`}
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Classifieds Grid */}
       {classifiedItems.length > 0 && (

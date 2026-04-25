@@ -21,6 +21,7 @@ import {
 import {
   adaptWeeks,
   adaptWeekNarrativesList,
+  buildWeekSummaryFromNarratives,
   adaptTrendsList,
   adaptTrendDetail,
   generateTrendAlerts,
@@ -204,7 +205,13 @@ function App() {
 
     setArticleIndex(prev => mergeArticleListItems(prev, articlesRes.articles));
     setNarrativesByWeek(prev => ({ ...prev, [weekId]: narratives }));
-    setWeeks(prev => prev.map(week => (week.id === weekId ? { ...week, narratives } : week)));
+    setWeeks(prev =>
+      prev.map(week => {
+        if (week.id !== weekId) return week;
+        const updatedSummary = buildWeekSummaryFromNarratives(narrativesRes.narratives, week.summary);
+        return { ...week, narratives, summary: updatedSummary };
+      }),
+    );
 
     return narratives;
   }

@@ -94,6 +94,10 @@ export interface WeeklySummary {
   dateRange: string;
   headline: string;
   content: React.ReactNode;
+  /** Populated after per-week narratives load */
+  totalNarratives?: number;
+  breakingCount?: number;
+  dominantSentiment?: string;
 }
 
 export interface WeekData {

@@ -50,7 +50,15 @@ export const Archives: React.FC<ArchivesProps> = ({ weeks, onOpenWeek }) => {
                   )}
                 </div>
 
-                <p style={{ fontSize: '0.95rem', fontWeight: 'bold', marginBottom: '8px' }}>{week.summary.headline}</p>
+                <p style={{
+                  fontSize: '0.95rem',
+                  fontWeight: 'bold',
+                  marginBottom: '8px',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}>{week.summary.headline}</p>
 
                 <div style={{
                   fontSize: '0.85rem',

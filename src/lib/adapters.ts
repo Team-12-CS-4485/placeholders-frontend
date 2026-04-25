@@ -11,7 +11,7 @@ import type {
   BackendArticleListItem,
   BackendWeekNarrativeItem,
 } from '../services/api';
-import type { WeekData, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video, VideoDetailData } from '../types';
+import type { WeekData, WeeklySummary, Narrative, Claim, Trend, TrendAlert, CreatorRisk, Video, VideoDetailData } from '../types';
 
 // ---- Helpers ----
 
@@ -58,12 +58,52 @@ export function adaptWeeks(res: BackendWeeksResponse): WeekData[] {
       totalViews: w.total_views,
       summary: {
         dateRange,
+        // Aggregate-derived fallback; overwritten by buildWeekSummaryFromNarratives once narratives load
         headline: `${w.breaking_count} Breaking Stories | ${capitalize(w.dominant_sentiment)} Sentiment`,
         content: `${w.total_videos} videos analyzed across ${w.active_clusters} active clusters this week.`,
+        breakingCount: w.breaking_count,
+        dominantSentiment: w.dominant_sentiment,
       },
       narratives: [],
     };
   });
+}
+
+/** Build an enriched WeeklySummary from per-week narrative data.
+ *  Headline is taken from the highest-view narrative with a non-empty week_overview;
+ *  falls back to first non-empty week_overview, then to the existing aggregate headline.
+ */
+export function buildWeekSummaryFromNarratives(
+  items: BackendWeekNarrativeItem[],
+  existing: WeeklySummary,
+): WeeklySummary {
+  if (items.length === 0) return existing;
+
+  const sorted = [...items].sort((a, b) => b.view_count - a.view_count);
+  const overview =
+    sorted.find(item => item.week_overview?.trim())?.week_overview?.trim() ??
+    items.find(item => item.week_overview?.trim())?.week_overview?.trim() ??
+    null;
+
+  const breakingCount = items.reduce((sum, item) => sum + item.breaking_count, 0);
+
+  const sentimentCounts: Record<string, number> = {};
+  for (const item of items) {
+    if (item.dominant_sentiment) {
+      sentimentCounts[item.dominant_sentiment] = (sentimentCounts[item.dominant_sentiment] ?? 0) + 1;
+    }
+  }
+  const dominantSentiment =
+    Object.entries(sentimentCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ??
+    existing.dominantSentiment;
+
+  return {
+    ...existing,
+    headline: overview ?? existing.headline,
+    totalNarratives: items.length,
+    breakingCount,
+    dominantSentiment,
+  };
 }
 
 // ---- Narratives (list) ----
