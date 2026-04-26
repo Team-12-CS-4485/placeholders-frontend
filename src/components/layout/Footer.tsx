@@ -34,7 +34,14 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         <div className="footer-col footer-col--right">
-          <span>LAST SYNC: {lastSync}</span>
+          <button
+            type="button"
+            className="footer-back-top"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Return to top of page"
+          >
+            [↑] RETURN TO MASTHEAD
+          </button>
           <nav className="footer-links" aria-label="Footer navigation">
             <a href="#" className="footer-link">Privacy Policy</a>
             <a href="#" className="footer-link">Terms of Access</a>
@@ -49,14 +56,7 @@ export const Footer: React.FC<FooterProps> = ({
               </button>
             )}
           </nav>
-          <button
-            type="button"
-            className="footer-back-top"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Return to top of page"
-          >
-            [↑] RETURN TO MASTHEAD
-          </button>
+          <span>LAST SYNC: {lastSync}</span>
         </div>
       </div>
 

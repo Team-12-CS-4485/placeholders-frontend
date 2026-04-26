@@ -958,7 +958,7 @@ h1, h2, h3, h4, h5 {
 
 /* --- FOOTER --- */
 .footer {
-  background: var(--bg-aged);
+  background: var(--bg-paper);
   border-top: 3px solid var(--ink-heavy);
   padding: 16px 0 12px;
   margin-top: 20px;
@@ -1018,6 +1018,7 @@ h1, h2, h3, h4, h5 {
   color: var(--ink-faded);
   text-decoration: none;
   font-size: 0.7rem;
+  text-transform: uppercase;
   background: none;
   border: none;
   padding: 0;
