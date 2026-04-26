@@ -242,6 +242,10 @@ export const Claims: React.FC<ClaimsProps> = ({
             const colClaims = allClaims
               .filter(c => c.claimType === col.type)
               .sort((a, b) => b.riskScore - a.riskScore);
+            const isExpanded = expandedCols.has(col.type);
+            const visibleClaims = isExpanded ? colClaims : colClaims.slice(0, CLAIMS_PER_COLUMN);
+            const hiddenCount = colClaims.length - visibleClaims.length;
+
             return (
               <div key={col.type} className={`col-span-4${colIdx > 0 ? ' vertical-divider' : ''}`}>
                 <div
@@ -271,18 +275,44 @@ export const Claims: React.FC<ClaimsProps> = ({
                   </p>
                 )}
 
-                {colClaims.map((claim, idx) => (
+                {visibleClaims.map((claim, idx) => (
                   <div
                     key={claim.id}
                     style={{
                       marginBottom: '20px',
                       paddingBottom: '20px',
-                      borderBottom: idx < colClaims.length - 1 ? '1px solid var(--ink-heavy)' : 'none',
+                      borderBottom: idx < visibleClaims.length - 1 || hiddenCount > 0 ? '1px solid var(--ink-heavy)' : 'none',
                     }}
                   >
                     <ClaimEntry claim={claim} />
                   </div>
                 ))}
+
+                {colClaims.length > CLAIMS_PER_COLUMN && (
+                  <button
+                    onClick={() =>
+                      setExpandedCols(prev => {
+                        const next = new Set(prev);
+                        if (next.has(col.type)) next.delete(col.type);
+                        else next.add(col.type);
+                        return next;
+                      })
+                    }
+                    className="font-mono"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      color: 'var(--ink-faded)',
+                      padding: '4px 0 0 0',
+                      textDecoration: 'underline',
+                      display: 'block',
+                    }}
+                  >
+                    {isExpanded ? 'Show less' : `+${hiddenCount} more claims`}
+                  </button>
+                )}
               </div>
             );
           })}
