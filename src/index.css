@@ -10,6 +10,8 @@
   --highlighter-teal: #00FFC4;
   --folder-active: #F4F1EA;
   --folder-inactive: #E4DFD0;
+  --ink-danger: #cc0000;
+  --bg-danger-subtle: #fff8f8;
 }
 
 /* --- BASE STYLES & TYPOGRAPHY --- */
@@ -308,19 +310,13 @@ h1, h2, h3, h4, h5 {
   margin-bottom: -1px;
   position: relative;
   z-index: 10;
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink-faded) transparent;
+  scrollbar-width: none;
   padding-top: 5px; /* Room for active tab expansion */
 }
 
 .folder-tabs-container::-webkit-scrollbar {
   height: 8px;
 }
-.folder-tabs-container::-webkit-scrollbar-thumb {
-  background-color: var(--ink-faded);
-  border-radius: 4px;
-}
-
 .tab-group {
   display: flex;
   align-items: flex-end;
@@ -514,6 +510,133 @@ h1, h2, h3, h4, h5 {
   margin-bottom: 5px;
 }
 
+/* --- NEWSPAPER CHARM --- */
+.byline {
+  font-family: 'Courier Prime', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+  margin-bottom: 6px;
+}
+
+.drop-cap-block p::first-letter {
+  float: left;
+  font-family: 'Playfair Display', serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  line-height: 0.85;
+  margin: 0px 4px 0 0;
+  color: var(--ink-heavy);
+}
+
+.rule-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+
+.rule-section hr {
+  flex: 1;
+  border: none;
+  border-top: 2px solid var(--ink-heavy);
+}
+
+.rule-label {
+  font-family: 'Courier Prime', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stamp {
+  display: inline-block;
+  border: 2px solid var(--ink-danger);
+  color: var(--ink-danger);
+  font-family: 'Courier Prime', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  transform: rotate(-2deg);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.alert-box {
+  border: 1.5px solid var(--ink-danger);
+  padding: 10px 14px;
+  background: var(--bg-danger-subtle);
+  margin-top: 20px;
+}
+
+.classifieds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 2px solid var(--ink-heavy);
+  padding-top: 10px;
+  margin-top: 18px;
+}
+
+.classifieds-grid .classified-item {
+  border-right: 1px solid #999;
+  border-bottom: none;
+  padding: 6px 10px 6px 0;
+  margin-right: 10px;
+}
+
+.classifieds-grid .classified-item:nth-child(3n),
+.classifieds-grid .classified-item:last-child {
+  border-right: none;
+  margin-right: 0;
+}
+
+/* --- FACT-CHECK CARD --- */
+.article-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+.fact-card {
+  border: 1px solid var(--ink-heavy);
+  display: flex;
+}
+
+.fact-card-side {
+  background: var(--ink-heavy);
+  color: var(--bg-paper);
+  font-family: 'Courier Prime', monospace;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 10px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transform: rotate(180deg);
+}
+
+.fact-card-body {
+  padding: 10px 12px;
+  flex: 1;
+}
+
+.fact-card-text {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink-standard);
+  font-style: italic;
+}
+
 /* --- RESPONSIVE DESIGN --- */
 @media (max-width: 900px) {
   .newspaper-grid { display: flex; flex-direction: column; }
@@ -531,6 +654,8 @@ h1, h2, h3, h4, h5 {
   .masthead-search-results { width: 100%; }
   .masthead-refresh-btn { min-height: 44px; }
   .masthead .sub-meta { flex-direction: column; gap: 4px; align-items: center; }
+  .classifieds-grid { grid-template-columns: 1fr; }
+  .article-grid { grid-template-columns: 1fr; }
 }
 
 /* --- CLICKABLE TITLES --- */
@@ -797,7 +922,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .source-thumbnail {
-  width: 80px;
+  width: 80px;  
   height: 45px;
   background-color: #333;
   position: relative;

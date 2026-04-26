@@ -99,7 +99,23 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
   );
 };
 
+const CLAIMS_PER_COLUMN = 5;
+
+const CLAIM_COLUMNS: { type: 'consensus' | 'debated' | 'unique'; label: string }[] = [
+  { type: 'consensus', label: 'Consensus' },
+  { type: 'debated',   label: 'Debated'   },
+  { type: 'unique',    label: 'Unique'     },
+];
+
 export const Claims: React.FC<ClaimsProps> = ({
+  currentWeekId,
+  weeks,
+  onClaimsCached,
+}) => {
+  return <ClaimsPanel key={currentWeekId} currentWeekId={currentWeekId} weeks={weeks} onClaimsCached={onClaimsCached} />;
+};
+
+const ClaimsPanel: React.FC<ClaimsProps> = ({
   currentWeekId,
   weeks,
   onClaimsCached,
@@ -107,6 +123,7 @@ export const Claims: React.FC<ClaimsProps> = ({
   const [selectedWeekId, setSelectedWeekId] = useState(currentWeekId);
   const [narratives, setNarratives] = useState<Narrative[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedCols, setExpandedCols] = useState<Set<'consensus' | 'debated' | 'unique'>>(new Set());
   const emitClaimsCached = useEffectEvent(
     (
       entries: Array<{
@@ -120,15 +137,9 @@ export const Claims: React.FC<ClaimsProps> = ({
     },
   );
 
-  // Keep selectedWeekId in sync if parent changes the current week
-  useEffect(() => {
-    setSelectedWeekId(currentWeekId);
-  }, [currentWeekId]);
-
   useEffect(() => {
     if (!selectedWeekId) return;
     let cancelled = false;
-    setIsLoading(true);
 
     async function load() {
       const weekRes = await fetchNarrativesList(selectedWeekId);
@@ -170,12 +181,6 @@ export const Claims: React.FC<ClaimsProps> = ({
 
   const selectedWeek = weeks.find(w => w.id === selectedWeekId);
 
-  const CLAIM_COLUMNS: { type: 'consensus' | 'debated' | 'unique'; label: string }[] = [
-    { type: 'consensus', label: 'Consensus' },
-    { type: 'debated',   label: 'Debated'   },
-    { type: 'unique',    label: 'Unique'     },
-  ];
-
   // Flatten all claims across narratives, grouped by claimType
   const allClaims = narratives.flatMap(n => n.claims);
 
@@ -200,7 +205,11 @@ export const Claims: React.FC<ClaimsProps> = ({
           <select
             id="claims-week-select"
             value={selectedWeekId}
-            onChange={e => setSelectedWeekId(e.target.value)}
+            onChange={e => {
+              setIsLoading(true);
+              setExpandedCols(new Set());
+              setSelectedWeekId(e.target.value);
+            }}
             className="font-mono"
             style={{
               fontFamily: "'Courier Prime', monospace",
@@ -239,6 +248,10 @@ export const Claims: React.FC<ClaimsProps> = ({
             const colClaims = allClaims
               .filter(c => c.claimType === col.type)
               .sort((a, b) => b.riskScore - a.riskScore);
+            const isExpanded = expandedCols.has(col.type);
+            const visibleClaims = isExpanded ? colClaims : colClaims.slice(0, CLAIMS_PER_COLUMN);
+            const hiddenCount = colClaims.length - visibleClaims.length;
+
             return (
               <div key={col.type} className={`col-span-4${colIdx > 0 ? ' vertical-divider' : ''}`}>
                 <div
@@ -268,18 +281,44 @@ export const Claims: React.FC<ClaimsProps> = ({
                   </p>
                 )}
 
-                {colClaims.map((claim, idx) => (
+                {visibleClaims.map((claim, idx) => (
                   <div
                     key={claim.id}
                     style={{
                       marginBottom: '20px',
                       paddingBottom: '20px',
-                      borderBottom: idx < colClaims.length - 1 ? '1px solid var(--ink-heavy)' : 'none',
+                      borderBottom: idx < visibleClaims.length - 1 || hiddenCount > 0 ? '1px solid var(--ink-heavy)' : 'none',
                     }}
                   >
                     <ClaimEntry claim={claim} />
                   </div>
                 ))}
+
+                {colClaims.length > CLAIMS_PER_COLUMN && (
+                  <button
+                    onClick={() =>
+                      setExpandedCols(prev => {
+                        const next = new Set(prev);
+                        if (next.has(col.type)) next.delete(col.type);
+                        else next.add(col.type);
+                        return next;
+                      })
+                    }
+                    className="font-mono"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      color: 'var(--ink-faded)',
+                      padding: '4px 0 0 0',
+                      textDecoration: 'underline',
+                      display: 'block',
+                    }}
+                  >
+                    {isExpanded ? 'Show less' : `+${hiddenCount} more claims`}
+                  </button>
+                )}
               </div>
             );
           })}
