@@ -112,6 +112,14 @@ export const Claims: React.FC<ClaimsProps> = ({
   weeks,
   onClaimsCached,
 }) => {
+  return <ClaimsPanel key={currentWeekId} currentWeekId={currentWeekId} weeks={weeks} onClaimsCached={onClaimsCached} />;
+};
+
+const ClaimsPanel: React.FC<ClaimsProps> = ({
+  currentWeekId,
+  weeks,
+  onClaimsCached,
+}) => {
   const [selectedWeekId, setSelectedWeekId] = useState(currentWeekId);
   const [narratives, setNarratives] = useState<Narrative[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,16 +137,9 @@ export const Claims: React.FC<ClaimsProps> = ({
     },
   );
 
-  // Keep selectedWeekId in sync if parent changes the current week; reset expansion state
-  useEffect(() => {
-    setSelectedWeekId(currentWeekId);
-    setExpandedCols(new Set());
-  }, [currentWeekId]);
-
   useEffect(() => {
     if (!selectedWeekId) return;
     let cancelled = false;
-    setIsLoading(true);
 
     async function load() {
       const weekRes = await fetchNarrativesList(selectedWeekId);
@@ -204,7 +205,11 @@ export const Claims: React.FC<ClaimsProps> = ({
           <select
             id="claims-week-select"
             value={selectedWeekId}
-            onChange={e => setSelectedWeekId(e.target.value)}
+            onChange={e => {
+              setIsLoading(true);
+              setExpandedCols(new Set());
+              setSelectedWeekId(e.target.value);
+            }}
             className="font-mono"
             style={{
               fontFamily: "'Courier Prime', monospace",

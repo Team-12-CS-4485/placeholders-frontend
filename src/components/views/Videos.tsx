@@ -16,6 +16,7 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick, onVideosCached, in
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [isLoading, setIsLoading] = useState(initialVideos.length === 0);
   const [sortOrder, setSortOrder] = useState<SortOrder>('most-viewed');
+  const hasInitialVideos = initialVideos.length > 0;
 
   // Pagination state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -26,7 +27,7 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick, onVideosCached, in
 
   // Initial fetch — only if no cached videos provided
   useEffect(() => {
-    if (initialVideos.length > 0) return; // Use cached data
+    if (hasInitialVideos) return; // Use cached data
 
     let cancelled = false;
     // Fetch an initial batch of 24 to fill 2-3 rows nicely (since it's a 3-column grid)
@@ -42,7 +43,7 @@ export const Videos: React.FC<VideosProps> = ({ onVideoClick, onVideosCached, in
       if (!cancelled) setIsLoading(false);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [hasInitialVideos]);
 
   // Fetch more videos using the cursor
   const handleLoadMore = async () => {
