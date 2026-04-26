@@ -101,6 +101,12 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
 
 const CLAIMS_PER_COLUMN = 5;
 
+const CLAIM_COLUMNS: { type: 'consensus' | 'debated' | 'unique'; label: string }[] = [
+  { type: 'consensus', label: 'Consensus' },
+  { type: 'debated',   label: 'Debated'   },
+  { type: 'unique',    label: 'Unique'     },
+];
+
 export const Claims: React.FC<ClaimsProps> = ({
   currentWeekId,
   weeks,
@@ -123,9 +129,10 @@ export const Claims: React.FC<ClaimsProps> = ({
     },
   );
 
-  // Keep selectedWeekId in sync if parent changes the current week
+  // Keep selectedWeekId in sync if parent changes the current week; reset expansion state
   useEffect(() => {
     setSelectedWeekId(currentWeekId);
+    setExpandedCols(new Set());
   }, [currentWeekId]);
 
   useEffect(() => {
@@ -172,12 +179,6 @@ export const Claims: React.FC<ClaimsProps> = ({
   }, [selectedWeekId]);
 
   const selectedWeek = weeks.find(w => w.id === selectedWeekId);
-
-  const CLAIM_COLUMNS: { type: 'consensus' | 'debated' | 'unique'; label: string }[] = [
-    { type: 'consensus', label: 'Consensus' },
-    { type: 'debated',   label: 'Debated'   },
-    { type: 'unique',    label: 'Unique'     },
-  ];
 
   // Flatten all claims across narratives, grouped by claimType
   const allClaims = narratives.flatMap(n => n.claims);
