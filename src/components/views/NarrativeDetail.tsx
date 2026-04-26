@@ -1,4 +1,4 @@
-import React, { useEffect, useEffectEvent, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import type { Narrative, Trend, Claim } from '../../types';
 import {
   fetchNarrativeClaims,
@@ -42,6 +42,18 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
   const [claims, setClaims] = useState<Claim[]>([]);
   const [articleLoading, setArticleLoading] = useState(true);
   const [claimsLoading, setClaimsLoading] = useState(true);
+  const [expandedCreators, setExpandedCreators] = useState<Set<string>>(new Set());
+
+  const groupedClaims = useMemo(() => {
+    const sorted = [...claims].sort((a, b) => b.riskScore - a.riskScore);
+    const map = new Map<string, Claim[]>();
+    for (const claim of sorted) {
+      const group = map.get(claim.creatorName) ?? [];
+      group.push(claim);
+      map.set(claim.creatorName, group);
+    }
+    return [...map.values()];
+  }, [claims]);
 
   const clusterId = +narrative.id;
   const weekNumber = parseWeekNumber(narrative.weekId);
@@ -324,15 +336,18 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
             </p>
           )}
 
-          {claims.map(claim => {
-            const youtubeHandle = claim.creatorName.startsWith('@')
-              ? claim.creatorName
-              : `@${claim.creatorName}`;
+          {groupedClaims.map(group => {
+            const primary = group[0];
+            const rest = group.slice(1);
+            const isExpanded = expandedCreators.has(primary.creatorName);
+            const youtubeHandle = primary.creatorName.startsWith('@')
+              ? primary.creatorName
+              : `@${primary.creatorName}`;
 
             return (
-              <div key={claim.id} className="claim-card">
+              <div key={primary.id} className="claim-card">
                 <div className="claim-header">
-                  <div className="profile-pic">{claim.creatorInitials}</div>
+                  <div className="profile-pic">{primary.creatorInitials}</div>
 
                   <a
                     href={`https://youtube.com/${youtubeHandle}`}
@@ -345,39 +360,118 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
                       textDecoration: 'none',
                     }}
                   >
-                    {claim.creatorName}
+                    {primary.creatorName}
                   </a>
 
                   <span
-                    className={`risk-badge ${getRiskClass(claim.riskScore)}`}
-                    title={`Risk score: ${claim.riskScore.toFixed(2)} — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
+                    className={`risk-badge ${getRiskClass(primary.riskScore)}`}
+                    title={`Risk score: ${primary.riskScore.toFixed(2)} — reflects misinformation potential (HIGH ≥ 0.8 | MED ≥ 0.4 | LOW < 0.4)`}
                   >
-                    {claim.riskScore.toFixed(2)}
+                    {primary.riskScore.toFixed(2)}
                   </span>
                 </div>
 
-                <h4 style={{ fontSize: '1.05rem', marginBottom: '8px', lineHeight: 1.3 }}>
-                  "{claim.extractedClaim}"
-                </h4>
-
-                {claim.originalQuote && (
-                  <p
-                    style={{
-                      fontSize: '0.82rem',
-                      fontStyle: 'italic',
-                      color: 'var(--ink-faded)',
-                      marginBottom: '10px',
-                      textIndent: 0,
-                    }}
+                {primary.videoId ? (
+                  <h4
+                    className="clickable-title"
+                    style={{ fontSize: '1.05rem', marginBottom: '8px', lineHeight: 1.3, cursor: 'pointer' }}
+                    onClick={() => onVideoClick(primary.videoId!)}
                   >
-                    {claim.originalQuote}
-                  </p>
+                    "{primary.extractedClaim}"
+                  </h4>
+                ) : primary.videoUrl !== '#' ? (
+                  <a
+                    href={primary.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="clickable-title"
+                    style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+                  >
+                    <h4 style={{ fontSize: '1.05rem', marginBottom: '8px', lineHeight: 1.3 }}>
+                      "{primary.extractedClaim}"
+                    </h4>
+                  </a>
+                ) : (
+                  <h4 style={{ fontSize: '1.05rem', marginBottom: '8px', lineHeight: 1.3 }}>
+                    "{primary.extractedClaim}"
+                  </h4>
                 )}
 
-                {/* Link to video detail if we have a videoId, else YouTube fallback */}
-                {claim.videoId ? (
+                {rest.length > 0 && (
                   <button
-                    onClick={() => onVideoClick(claim.videoId!)}
+                    onClick={() =>
+                      setExpandedCreators(prev => {
+                        const next = new Set(prev);
+                        if (next.has(primary.creatorName)) next.delete(primary.creatorName);
+                        else next.add(primary.creatorName);
+                        return next;
+                      })
+                    }
+                    className="font-mono"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      color: 'var(--ink-faded)',
+                      padding: '0 0 8px 0',
+                      textDecoration: 'underline',
+                      display: 'block',
+                    }}
+                  >
+                    {isExpanded ? 'show less' : `+${rest.length} more from this source`}
+                  </button>
+                )}
+
+                {isExpanded && rest.map(claim => (
+                  <div
+                    key={claim.id}
+                    style={{
+                      borderTop: '1px dotted var(--ink-faded)',
+                      paddingTop: '8px',
+                      marginTop: '4px',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <span
+                      className={`risk-badge ${getRiskClass(claim.riskScore)}`}
+                      title={`Risk score: ${claim.riskScore.toFixed(2)}`}
+                      style={{ marginBottom: '6px', display: 'inline-block' }}
+                    >
+                      {claim.riskScore.toFixed(2)}
+                    </span>
+                    {claim.videoId ? (
+                      <h4
+                        className="clickable-title"
+                        style={{ fontSize: '0.95rem', lineHeight: 1.3, cursor: 'pointer' }}
+                        onClick={() => onVideoClick(claim.videoId!)}
+                      >
+                        "{claim.extractedClaim}"
+                      </h4>
+                    ) : claim.videoUrl !== '#' ? (
+                      <a
+                        href={claim.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="clickable-title"
+                        style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+                      >
+                        <h4 style={{ fontSize: '0.95rem', lineHeight: 1.3 }}>
+                          "{claim.extractedClaim}"
+                        </h4>
+                      </a>
+                    ) : (
+                      <h4 style={{ fontSize: '0.95rem', lineHeight: 1.3 }}>
+                        "{claim.extractedClaim}"
+                      </h4>
+                    )}
+                  </div>
+                ))}
+
+                {/* Link to video detail if we have a videoId, else YouTube fallback */}
+                {primary.videoId ? (
+                  <button
+                    onClick={() => onVideoClick(primary.videoId!)}
                     className="font-mono clickable-title"
                     style={{
                       background: 'none',
@@ -390,9 +484,9 @@ export const NarrativeDetail: React.FC<NarrativeDetailProps> = ({
                   >
                     [View Source Video]
                   </button>
-                ) : claim.videoUrl !== '#' ? (
+                ) : primary.videoUrl !== '#' ? (
                   <a
-                    href={claim.videoUrl}
+                    href={primary.videoUrl}
                     className="font-mono clickable-title"
                     style={{
                       fontSize: '0.78rem',
