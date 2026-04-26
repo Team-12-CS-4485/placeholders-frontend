@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface FooterProps {
   onArchiveIndex?: () => void;
@@ -9,15 +9,11 @@ export const Footer: React.FC<FooterProps> = ({
   onArchiveIndex,
   version = 'v2.4.0-PRIME',
 }) => {
-  const lastSync = new Date().toLocaleTimeString('en-US', {
+  const lastSync = useMemo(() => new Date().toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  });
-
-  const handleBackToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }), []);
 
   return (
     <footer className="footer">
@@ -47,6 +43,7 @@ export const Footer: React.FC<FooterProps> = ({
                 type="button"
                 className="footer-link footer-link--btn"
                 onClick={onArchiveIndex}
+                title="Open the Archive Index tab"
               >
                 Archive Index
               </button>
@@ -55,7 +52,7 @@ export const Footer: React.FC<FooterProps> = ({
           <button
             type="button"
             className="footer-back-top"
-            onClick={handleBackToTop}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             aria-label="Return to top of page"
           >
             [↑] RETURN TO MASTHEAD
