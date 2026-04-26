@@ -99,6 +99,8 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
   );
 };
 
+const CLAIMS_PER_COLUMN = 5;
+
 export const Claims: React.FC<ClaimsProps> = ({
   currentWeekId,
   weeks,
@@ -107,6 +109,7 @@ export const Claims: React.FC<ClaimsProps> = ({
   const [selectedWeekId, setSelectedWeekId] = useState(currentWeekId);
   const [narratives, setNarratives] = useState<Narrative[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedCols, setExpandedCols] = useState<Set<'consensus' | 'debated' | 'unique'>>(new Set());
   const emitClaimsCached = useEffectEvent(
     (
       entries: Array<{
