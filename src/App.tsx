@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Masthead } from './components/layout/Masthead';
 import { FolderTabs } from './components/layout/FolderTabs';
 import { Footer } from './components/layout/Footer';
@@ -486,6 +486,8 @@ function App() {
 
   const handleBack = () => handleCloseTab(activeTabId);
 
+  const handleArchiveIndex = useCallback(() => setActiveTabId('archives'), []);
+
   const handleArticleCached = (
     weekId: string,
     narrativeId: string,
@@ -948,7 +950,7 @@ function App() {
         onCloseTab={handleCloseTab}
       />
       <main className="folder-content">{renderContent()}</main>
-      <Footer onArchiveIndex={() => setActiveTabId('archives')} />
+      <Footer onArchiveIndex={handleArchiveIndex} />
     </div>
   );
 }
