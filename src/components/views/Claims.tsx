@@ -62,6 +62,10 @@ const ClaimEntry: React.FC<{ claim: Claim }> = ({ claim }) => {
             paddingLeft: '8px',
             marginTop: '4px',
             textIndent: 0,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
           "{claim.originalQuote}"
