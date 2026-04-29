@@ -1,6 +1,6 @@
-// const BASE = 'https://newsify-656172157874.us-south1.run.app';
+const BASE = 'https://newsify-656172157874.us-south1.run.app';
 //Stupid comment to trigger a commit
-const BASE = 'http://localhost:8000';
+// const BASE = 'http://localhost:8000';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
