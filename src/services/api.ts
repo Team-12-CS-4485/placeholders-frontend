@@ -1,5 +1,6 @@
 const BASE = 'https://newsify-656172157874.us-south1.run.app';
 //Stupid comment to trigger a commit
+// const BASE = 'http://localhost:8000';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
@@ -279,8 +280,11 @@ export function fetchNarrativeDetail(clusterId: number): Promise<BackendNarrativ
   return get(`/api/narratives/${clusterId}`);
 }
 
-export function fetchNarrativeClaims(clusterId: number): Promise<BackendNarrativeClaims> {
-  return get(`/api/narratives/${clusterId}/claims`);
+export function fetchNarrativeClaims(clusterId: number, week?: string): Promise<BackendNarrativeClaims> {
+  const path = week
+    ? `/api/narratives/${clusterId}/claims?week=${encodeURIComponent(week)}`
+    : `/api/narratives/${clusterId}/claims`;
+  return get(path);
 }
 
 export function fetchTrendsList(): Promise<BackendTrendListResponse> {

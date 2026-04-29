@@ -147,7 +147,7 @@ const ClaimsPanel: React.FC<ClaimsProps> = ({
 
       const claimResults = await Promise.all(
         weekRes.narratives.map((item: { cluster_id: number }) =>
-          fetchNarrativeClaims(item.cluster_id)
+          fetchNarrativeClaims(item.cluster_id, selectedWeekId)
             .then(res => ({ id: item.cluster_id.toString(), claims: adaptClaims(res, item.cluster_id.toString()) }))
             .catch(() => ({ id: item.cluster_id.toString(), claims: [] as Claim[] }))
         )
