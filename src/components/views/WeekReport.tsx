@@ -140,16 +140,6 @@ export const WeekReport: React.FC<WeekReportProps> = ({ week, trends, onReadMore
 
                     <div className="article-grid">
                       <div className="drop-cap-block"><p style={{ marginTop: '8px' }}>{narrative.summary}</p></div>
-                      {narrative.fullText.some(t => typeof t === 'string') && (
-                        <div className="fact-card">
-                          <div className="fact-card-side">Context</div>
-                          <div className="fact-card-body">
-                            {narrative.fullText.filter((t): t is string => typeof t === 'string').map((claim, i) => (
-                              <p key={i} className="fact-card-text" style={i > 0 ? { marginTop: '8px' } : undefined}>{claim}</p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <button
