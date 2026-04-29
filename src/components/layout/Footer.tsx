@@ -42,10 +42,8 @@ export const Footer: React.FC<FooterProps> = ({
           >
             [↑] RETURN TO MASTHEAD
           </button>
-          <nav className="footer-links" aria-label="Footer navigation">
-            <a href="#" className="footer-link">Privacy Policy</a>
-            <a href="#" className="footer-link">Terms of Access</a>
-            {onArchiveIndex && (
+          {onArchiveIndex && (
+            <nav className="footer-links" aria-label="Footer navigation">
               <button
                 type="button"
                 className="footer-link footer-link--btn"
@@ -54,8 +52,8 @@ export const Footer: React.FC<FooterProps> = ({
               >
                 Archive Index
               </button>
-            )}
-          </nav>
+            </nav>
+          )}
           <span>LAST SYNC: {lastSync}</span>
         </div>
       </div>
