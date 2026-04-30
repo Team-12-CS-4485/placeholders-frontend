@@ -790,7 +790,7 @@ function App() {
 
   const tickerItems =
     trends.length > 0
-      ? trends.map(trend => `${trend.name} | Heat: ${trend.totalEngagement.toFixed(0)}`)
+      ? trends.filter(t => t.totalEngagement > 0).map(trend => `${trend.name} | Heat: ${trend.totalEngagement.toFixed(0)}`)
       : ['Loading intelligence feed...'];
 
   if (isLoading) {
