@@ -11,7 +11,7 @@ interface TrendsProps {
 export const Trends: React.FC<TrendsProps> = ({ trends, trendAlerts, onSelectTrend }) => {
   const [sortOrder, setSortOrder] = useState<'most' | 'least'>('most');
 
-  const sortedTrends = [...trends].sort((a, b) => {
+  const sortedTrends = [...trends].filter(t => t.totalEngagement > 0).sort((a, b) => {
     return sortOrder === 'most'
       ? b.totalEngagement - a.totalEngagement
       : a.totalEngagement - b.totalEngagement;
