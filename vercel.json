@@ -1,4 +1,8 @@
 {
+  "env": {
+    "VITE_DEMO_STATIC_MODE": "true"
+  },
+  "devCommand": "VITE_DEMO_STATIC_MODE=true npm run dev",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
