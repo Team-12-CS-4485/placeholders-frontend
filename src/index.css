@@ -70,6 +70,19 @@ h1, h2, h3, h4, h5 {
   margin-bottom: 30px;
 }
 
+.static-banner {
+  border: 1px solid var(--ink-heavy);
+  background: var(--bg-aged);
+  color: var(--ink-heavy);
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  margin: -16px 0 18px;
+  text-align: center;
+}
+
 .masthead h1 {
   font-size: 4rem;
   text-transform: uppercase;
@@ -1056,4 +1069,3 @@ h1, h2, h3, h4, h5 {
   opacity: 0.8;
   line-height: 1.4;
 }
-
