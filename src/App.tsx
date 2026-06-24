@@ -11,11 +11,13 @@ import { Claims } from './components/views/Claims';
 import { Videos } from './components/views/Videos';
 import { VideoDetail } from './components/views/VideoDetail';
 import {
+  DEMO_SNAPSHOT_DATE,
   fetchWeeks,
   fetchWeekNarratives,
   fetchTrendsList,
   fetchTrendDetail,
   fetchArticles,
+  isDemoStaticMode,
   type BackendArticleDetail,
   type BackendArticleListItem,
 } from './services/api';
@@ -48,6 +50,7 @@ import type {
 const WEEKS_CACHE_KEY = 'cap-weeks-v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const ARTICLE_INDEX_LIMIT = 1000;
+const IS_DEMO_STATIC_MODE = isDemoStaticMode();
 
 interface WeeksCache {
   weeks: WeekData[];
@@ -937,12 +940,17 @@ function App() {
     <div className="app-container">
       <Masthead
         tickerItems={tickerItems}
-        onRefresh={handleRefresh}
+        onRefresh={IS_DEMO_STATIC_MODE ? undefined : handleRefresh}
         searchQuery={searchQuery}
         searchResults={searchResults}
         onSearchQueryChange={setSearchQuery}
         onSearchSelect={handleSearchSelect}
       />
+      {IS_DEMO_STATIC_MODE && (
+        <section className="static-banner" role="status" aria-live="polite">
+          Archived static snapshot mode (read-only). Snapshot date: {DEMO_SNAPSHOT_DATE}.
+        </section>
+      )}
       <FolderTabs
         tabs={tabs}
         activeTabId={activeTabId}

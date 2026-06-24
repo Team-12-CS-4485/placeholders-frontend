@@ -1,11 +1,150 @@
+import {
+  STATIC_ARTICLE_DETAILS,
+  STATIC_ARTICLES,
+  STATIC_NARRATIVE_CLAIMS,
+  STATIC_NARRATIVE_DETAILS,
+  STATIC_NARRATIVE_LIST_BY_WEEK,
+  STATIC_SNAPSHOT_DATE,
+  STATIC_TREND_DETAILS,
+  STATIC_TRENDS,
+  STATIC_VIDEO_DETAILS,
+  STATIC_VIDEOS,
+  STATIC_WEEK_NARRATIVES,
+  STATIC_WEEKS,
+} from '../data/staticSnapshot';
+
 const BASE = 'https://newsify-656172157874.us-south1.run.app';
 //Stupid comment to trigger a commit
 // const BASE = 'http://localhost:8000';
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+function getEnvValue(name: string): string {
+  const env = (import.meta as ImportMeta & { env?: Record<string, unknown> }).env;
+  const value = env?.[name];
+  return typeof value === 'string' ? value : '';
+}
+
+function getGlobalOverrideValue(): string {
+  const globalValue = (globalThis as { __DEMO_STATIC_MODE__?: unknown }).__DEMO_STATIC_MODE__;
+  if (typeof globalValue === 'boolean') return String(globalValue);
+  if (typeof globalValue === 'string') return globalValue;
+  return '';
+}
+
+export function isDemoStaticMode(): boolean {
+  const value =
+    getGlobalOverrideValue() || getEnvValue('VITE_DEMO_STATIC_MODE') || getEnvValue('DEMO_STATIC_MODE');
+  return value.toLowerCase() === 'true';
+}
+
+export const DEMO_SNAPSHOT_DATE = STATIC_SNAPSHOT_DATE;
+
+function emptyNarrativeClaims(clusterId: number): BackendNarrativeClaims {
+  return {
+    cluster_id: clusterId,
+    claims: {
+      consensus: [],
+      debated: [],
+      unique: [],
+    },
+  };
+}
+
+function staticGet<T>(path: string): T {
+  const url = new URL(path, 'https://demo.local');
+  const { pathname, searchParams } = url;
+  const pathParts = pathname.split('/').filter(Boolean);
+
+  if (pathname === '/api/weeks') {
+    return STATIC_WEEKS as T;
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'weeks' && pathParts[2]) {
+    const week = pathParts[2];
+    const narratives = STATIC_WEEK_NARRATIVES[week] ?? [];
+    return { week, total: narratives.length, narratives } as T;
+  }
+
+  if (pathname === '/api/narratives') {
+    const week = searchParams.get('week') ?? '';
+    if (week) {
+      const narratives = STATIC_NARRATIVE_LIST_BY_WEEK[week] ?? [];
+      return { narratives, total: narratives.length } as T;
+    }
+
+    const all = Object.values(STATIC_NARRATIVE_LIST_BY_WEEK).flat();
+    const uniqueByCluster = new Map(all.map(item => [item.cluster_id, item]));
+    const narratives = Array.from(uniqueByCluster.values());
+    return { narratives, total: narratives.length } as T;
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'narratives' && pathParts[2]) {
+    const clusterId = Number(pathParts[2]);
+    if (pathParts[3] === 'claims') {
+      return (STATIC_NARRATIVE_CLAIMS[clusterId] ?? emptyNarrativeClaims(clusterId)) as T;
+    }
+    return STATIC_NARRATIVE_DETAILS[clusterId] as T;
+  }
+
+  if (pathname === '/api/trends') {
+    return { trends: STATIC_TRENDS, total: STATIC_TRENDS.length } as T;
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'trends' && pathParts[2]) {
+    return STATIC_TREND_DETAILS[Number(pathParts[2])] as T;
+  }
+
+  if (pathname === '/api/videos') {
+    const limit = Math.max(Number(searchParams.get('limit') ?? '20') || 20, 1);
+    const cursor = Math.max(Number(searchParams.get('cursor') ?? '0') || 0, 0);
+    const items = STATIC_VIDEOS.slice(cursor, cursor + limit);
+    const nextCursor = cursor + limit < STATIC_VIDEOS.length ? String(cursor + limit) : null;
+    return {
+      items,
+      total_returned: items.length,
+      next_cursor: nextCursor,
+    } as T;
+  }
+
+  if (pathname === '/api/videos/by-id') {
+    const videoId = searchParams.get('video_id') ?? '';
+    return STATIC_VIDEO_DETAILS[videoId] as T;
+  }
+
+  if (pathname === '/api/articles') {
+    const week = searchParams.get('week');
+    const clusterId = searchParams.get('cluster_id');
+    const limit = searchParams.get('limit');
+
+    let articles = STATIC_ARTICLES;
+    if (week) articles = articles.filter(item => item.week_number === Number(week));
+    if (clusterId) articles = articles.filter(item => item.cluster_id === Number(clusterId));
+    if (limit) articles = articles.slice(0, Math.max(Number(limit) || 0, 0));
+
+    return { articles, total: articles.length } as T;
+  }
+
+  if (pathParts[0] === 'api' && pathParts[1] === 'articles' && pathParts[2]) {
+    return STATIC_ARTICLE_DETAILS[pathParts[2]] as T;
+  }
+
+  throw new Error(`No static snapshot handler for ${path}`);
+}
+
+async function request<T>(path: string, method = 'GET'): Promise<T> {
+  if (isDemoStaticMode()) {
+    if (method.toUpperCase() !== 'GET') {
+      throw new Error(`Static snapshot mode is read-only: ${method} ${path}`);
+    }
+    return Promise.resolve(staticGet<T>(path));
+  }
+
+  const res = await fetch(`${BASE}${path}`, { method });
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
   return res.json();
+}
+
+async function get<T>(path: string): Promise<T> {
+  return request<T>(path, 'GET');
 }
 
 // ── Query builder ────────────────────────────────────────────────────────────
